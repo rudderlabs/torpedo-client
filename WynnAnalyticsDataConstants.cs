@@ -126,7 +126,8 @@ namespace Com.TorpedoLabs.Wynn.Analytics
         public const string ME_SENT_GIFT_COUNT = "send_gift_count";
         public const string ME_DAYS_IN_GAME = "days_in_game";
 
-        //Adding writeKey for RudderClient
+        // Adding default writeKey for RudderClient. 
+        // Get the writeKey from the RudderDashboard by enabling the source "Unity"
         public const string RUDDER_WRITE_KEY = "1P6q8fcXrkmekovCdk0a3gFq30X";
     }
 }

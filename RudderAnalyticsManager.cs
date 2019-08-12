@@ -17,8 +17,6 @@ namespace Com.TorpedoLabs.Propeller.Analytics
     {
         private IAnalyticsManager ownerManager;
         private bool isUserIdSet;
-        private 
-
         private RudderClient rudder;
 
         /// <summary>
@@ -91,9 +89,9 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 
                 RudderProperty recordPurchaseProperties = propertyBuilder.Build();
 
-                recordPurchaseProperties.AddProperty("productId",id);
+                recordPurchaseProperties.AddProperty("productId", id);
                 recordPurchaseProperties.AddProperty("price", price);
-                recordPurchaseProperties.AddProperty("quantity",1);
+                recordPurchaseProperties.AddProperty("quantity", 1);
                 recordPurchaseProperties.AddProperty("revenueType", store);
 
                 //Add the FoolProofParams
@@ -152,7 +150,6 @@ namespace Com.TorpedoLabs.Propeller.Analytics
 
                 //invoke track method
                 rudder.Track(eventBuilder);
-
             }
             catch (Exception e)
             {
