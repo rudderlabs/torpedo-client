@@ -9,6 +9,7 @@ using System;
 using System.Threading.Tasks;
 using System.Text;
 using System.Net;
+using System.Runtime.InteropServices;
 
 namespace com.rudderlabs.unity.library
 {
@@ -27,6 +28,13 @@ namespace com.rudderlabs.unity.library
 
         private int totalEvents = 0;
 
+        internal static string carrier = "unavailable";
+
+#if (UNITY_IPHONE || UNITY_TVOS)
+        [DllImport ("__Internal")]
+        private static extern string _GetiOSCarrierName();
+#endif
+
         internal EventRepository(string _writeKey, int _flushQueueSize, string _endPointUri)
         {
             writeKey = _writeKey;
@@ -42,10 +50,23 @@ namespace com.rudderlabs.unity.library
 
             totalEvents = 0;
 
+            // make a cache of carrier information
+#if UNITY_ANDROID
+            AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+            AndroidJavaClass ajc = new AndroidJavaClass("com.rudderlabs.rudderandroidplugin.Helper");
+            AndroidJavaObject context = activity.Call<AndroidJavaObject>("getApplicationContext");
+            carrier = ajc.CallStatic<string>("getCarrier", context);
+#endif
+
+#if (UNITY_IPHONE || UNITY_TVOS)
+            carrier = _GetiOSCarrierName();
+#endif
             CreateSchema();
         }
 
-        internal void enableLogging(bool _isEnabled) {
+        internal void enableLogging(bool _isEnabled)
+        {
             loggingEnabled = _isEnabled;
         }
 
