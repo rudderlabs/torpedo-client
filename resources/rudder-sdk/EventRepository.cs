@@ -31,7 +31,7 @@ namespace com.rudderlabs.unity.library
         internal static string carrier = "unavailable";
 
 #if (UNITY_IPHONE || UNITY_TVOS)
-        [DllImport ("__Internal")]
+        [DllImport("__Internal")]
         private static extern string _GetiOSCarrierName();
 #endif
 
@@ -73,7 +73,15 @@ namespace com.rudderlabs.unity.library
         private static void CreateConnection()
         {
             Debug.Log("EventRepository: creating connection");
-            conn = new SqliteConnection(dbPath);
+            try
+            {
+                conn = new SqliteConnection(dbPath);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("EventRepository DB ERROR: " + ex);
+            }
+
         }
 
         private void CreateSchema()
@@ -103,6 +111,7 @@ namespace com.rudderlabs.unity.library
         // generic method for dumping all events
         internal void Dump(RudderEvent rudderEvent)
         {
+            Debug.Log("EVENT DUMPED");
             // temporary for torpedo only as torpedo is specific to amplitude
             rudderEvent.AddIntegrations(RudderIntegrationPlatform.AMPLITUDE);
             // add incoming event to buffer 
@@ -111,6 +120,7 @@ namespace com.rudderlabs.unity.library
             // if flushQueueSize is full flush the events to server
             if (eventBuffer.Count == flushQueueSize)
             {
+                Debug.Log("EVENT FLUSH STARTED");
                 totalEvents += eventBuffer.Count;
                 FlushEventsAsync();
             }
@@ -118,44 +128,66 @@ namespace com.rudderlabs.unity.library
 
         internal void FlushEventsAsync()
         {
-            // consturuct payload with "sent_at" and "batch" 
-            RudderEventPayload eventPayload = new RudderEventPayload(writeKey, eventBuffer);
+            try
+            {
+                // TOTAL EVENT Count
+                Debug.Log(
+                    "\n++++++++++++++++++++++++++++++++++++++++++++" +
+                    "\nTOTAL EVENT COUNT: " + totalEvents +
+                    "\n++++++++++++++++++++++++++++++++++++++++++++"
+                );
 
-            // serialize payload to JSON string
-            string payloadString = JsonConvert.SerializeObject(eventPayload,
-                                                            Formatting.None,
-                                                            new JsonSerializerSettings
-                                                            {
-                                                                NullValueHandling = NullValueHandling.Ignore
-                                                            });
 
-            // TOTAL EVENT Count
-            Debug.Log(
-                "\n++++++++++++++++++++++++++++++++++++++++++++" +
-                "\nTOTAL EVENT COUNT: " + totalEvents +
-                "\n++++++++++++++++++++++++++++++++++++++++++++"
-            );
+                // consturuct payload with "sent_at" and "batch" 
+                RudderEventPayload eventPayload = new RudderEventPayload(writeKey, eventBuffer);
 
-            // make network request to flush the events 
-            PostEventToServer(payloadString);
-            Debug.Log("EventRepository : event posted");
-            // empty buffer
-            eventBuffer.RemoveRange(0, eventBuffer.Count);
+                Debug.Log("EventRepository: FlushEventsAsync: " + eventPayload.timestamp);
+                Debug.Log("EventRepository: FlushEventsAsync: " + eventPayload.events.Count);
+                Debug.Log("EventRepository: FlushEventsAsync: " + eventPayload.writeKey);
+
+                // serialize payload to JSON string
+                string payloadString = JsonConvert.SerializeObject(eventPayload,
+                                                                Formatting.None,
+                                                                new JsonSerializerSettings
+                                                                {
+                                                                    NullValueHandling = NullValueHandling.Ignore
+                                                                });
+
+                Debug.Log("EventRepository: Payload String: " + payloadString);
+
+                // make network request to flush the events 
+                PostEventToServer(payloadString);
+                Debug.Log("EventRepository : event posted");
+                // empty buffer
+                eventBuffer.RemoveRange(0, eventBuffer.Count);
+            }
+            catch (Exception e)
+            {
+                Debug.Log("EventRepository: FlushEventsAsync: Error: " + e);
+            }
+
         }
 
         private static void PostEventToServer(string payload)
         {
             Task.Run(() =>
             {
-                Debug.Log("EventRepository : event db dump started");
-                // dump events to persistance DB first
-                PersistEvents(payload);
-                Debug.Log("EventRepository : event db dump completed");
+                try
+                {
+                    Debug.Log("EventRepository : event db dump started");
+                    // dump events to persistance DB first
+                    PersistEvents(payload);
+                    Debug.Log("EventRepository : event db dump completed");
 
-                Debug.Log("EventRepository : event network dump started");
-                // flush Events from DB to server
-                SendEventsToServer();
-                Debug.Log("EventRepository : event network dump completed");
+                    Debug.Log("EventRepository : event network dump started");
+                    // flush Events from DB to server
+                    SendEventsToServer();
+                    Debug.Log("EventRepository : event network dump completed");
+                }
+                catch (Exception e)
+                {
+                    Debug.Log("EventRepository: PostEventToServer: Error: " + e);
+                }
             });
         }
 
@@ -190,7 +222,8 @@ namespace com.rudderlabs.unity.library
 
                     if (payload == null || batchId == -1)
                     {
-                        Debug.Log("EventRepository : payload, batchId null");
+                        Debug.Log("EventRepository : payloadL: " + payload);
+                        Debug.Log("EventRepository : batchIdL: " + batchId);
                         return;
                     }
 

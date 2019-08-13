@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using com.rudderlabs.unity.library.Event.Property;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using Debug = UnityEngine.Debug;
+using com.rudderlabs.unity.library.Errors;
 
 namespace com.rudderlabs.unity.library.Event
 {
@@ -26,7 +28,7 @@ namespace com.rudderlabs.unity.library.Event
             {
                 if (key.Contains("."))
                 {
-                    throw RudderException("\".\" can not be used as a key name for properties");
+                    throw new RudderException("\".\" can not be used as a key name for properties");
                 }
             }
             message.properties = _properties;
@@ -35,11 +37,6 @@ namespace com.rudderlabs.unity.library.Event
         public void SetProperties(RudderProperty _properties)
         {
             this.SetProperties(_properties.GetPropertyMap());
-        }
-
-        private Exception RudderException(string v)
-        {
-            throw new NotImplementedException();
         }
     }
 
@@ -72,7 +69,8 @@ namespace com.rudderlabs.unity.library.Event
 
         internal RudderMessage()
         {
-            integrations.Add(RudderIntegrationPlatform.GOOGLE_ANALYTICS.value, true);
+            integrations.Add(RudderIntegrationPlatform.ALL.value, false);
+            integrations.Add(RudderIntegrationPlatform.GOOGLE_ANALYTICS.value, false);
             anonymousId = SystemInfo.deviceUniqueIdentifier.ToLower();
         }
     }
@@ -126,7 +124,16 @@ namespace com.rudderlabs.unity.library.Event
         [JsonProperty(PropertyName = "rl_name")]
         internal string name = SystemInfo.operatingSystem.Split()[0];
         [JsonProperty(PropertyName = "rl_version")]
-        internal string version = SystemInfo.operatingSystem.Split()[2];
+        internal string version;
+
+        internal RudderOsInfo()
+        {
+#if UNITY_IOS
+            version = SystemInfo.operatingSystem.Split()[1];
+#else
+            version = SystemInfo.operatingSystem.Split()[2];
+#endif
+        }
     }
 
     class RudderScreenInfo
@@ -154,26 +161,6 @@ namespace com.rudderlabs.unity.library.Event
     class RudderNetwork
     {
         [JsonProperty(PropertyName = "rl_carrier")]
-        internal string carrier = "unavailable";
-
-        // #if UNITY_IPHONE
-        // [DllImport ("__Internal")]
-        // private static extern string _GetNetworkInfoIOS();
-        // #endif
-
-        // #if UNITY_ANDROID
-        // private static extern string _GetNetworkInfoAndroid();
-        // #endif
-
-        public RudderNetwork()
-        {
-            // #if UNITY_IPHONE
-            // carrier = _GetNetworkInfoIOS();
-            // #endif
-
-            // #if UNITY_ANDROID
-            // carrier = _GetNetworkInfoAndroid();
-            // #endif
-        }
+        internal string carrier = EventRepository.carrier;
     }
 }
