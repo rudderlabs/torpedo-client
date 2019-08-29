@@ -73,7 +73,7 @@ namespace com.rudderlabs.unity.library
         // end point for track events
         public void Track(RudderEvent rudderEvent)
         {
-            rudderEvent.message.type = RudderEventType.TRACK.value;
+            rudderEvent.rl_message.rl_type = RudderEventType.TRACK.value;
             repository.Dump(rudderEvent);
         }
         public void Track(RudderEventBuilder builder)
@@ -84,7 +84,7 @@ namespace com.rudderlabs.unity.library
         // end point for page events
         public void Page(RudderEvent rudderEvent)
         {
-            rudderEvent.message.type = RudderEventType.PAGE.value;
+            rudderEvent.rl_message.rl_type = RudderEventType.PAGE.value;
             repository.Dump(rudderEvent);
         }
         public void Page(RudderEventBuilder builder)
@@ -95,7 +95,7 @@ namespace com.rudderlabs.unity.library
         // end point for screen events
         public void Screen(RudderEvent rudderEvent)
         {
-            rudderEvent.message.type = RudderEventType.PAGE.value;
+            rudderEvent.rl_message.rl_type = RudderEventType.PAGE.value;
             repository.Dump(rudderEvent);
         }
         public void Screen(RudderEventBuilder builder)
@@ -108,10 +108,10 @@ namespace com.rudderlabs.unity.library
         {
             RudderEvent rudderEvent = new RudderEventBuilder()
                 .SetEventName("Identify")
-                .SetUseId(rudderTraits.id)
+                .SetUseId(rudderTraits.rl_id)
                 .Build();
-            rudderEvent.message.type = RudderEventType.IDENTIFY.value;
-            rudderEvent.message.context.traits = rudderTraits;
+            rudderEvent.rl_message.rl_type = RudderEventType.IDENTIFY.value;
+            rudderEvent.rl_message.rl_context.rl_traits = rudderTraits;
             repository.Dump(rudderEvent);
         }
         public void Identify(RudderTraitsBuilder builder)

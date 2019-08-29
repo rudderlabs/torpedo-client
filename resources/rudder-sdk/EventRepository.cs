@@ -1,14 +1,13 @@
 ﻿using com.rudderlabs.unity.library.Event;
 using System.Collections.Generic;
-using System.Net.Http;
-using Newtonsoft.Json;
 using UnityEngine;
-using Mono.Data.Sqlite;
-using System.Data;
 using System;
-using System.Threading.Tasks;
 using System.Text;
 using System.Net;
+using System.IO;
+using Mono.Data.Sqlite;
+using System.Data;
+using System.Threading;
 using System.Runtime.InteropServices;
 
 namespace com.rudderlabs.unity.library
@@ -81,7 +80,6 @@ namespace com.rudderlabs.unity.library
             {
                 Debug.Log("EventRepository DB ERROR: " + ex);
             }
-
         }
 
         private void CreateSchema()
@@ -141,17 +139,19 @@ namespace com.rudderlabs.unity.library
                 // consturuct payload with "sent_at" and "batch" 
                 RudderEventPayload eventPayload = new RudderEventPayload(writeKey, eventBuffer);
 
-                Debug.Log("EventRepository: FlushEventsAsync: " + eventPayload.timestamp);
-                Debug.Log("EventRepository: FlushEventsAsync: " + eventPayload.events.Count);
+                Debug.Log("EventRepository: FlushEventsAsync: " + eventPayload.sent_at);
+                Debug.Log("EventRepository: FlushEventsAsync: " + eventPayload.batch.Count);
                 Debug.Log("EventRepository: FlushEventsAsync: " + eventPayload.writeKey);
 
                 // serialize payload to JSON string
-                string payloadString = JsonConvert.SerializeObject(eventPayload,
-                                                                Formatting.None,
-                                                                new JsonSerializerSettings
-                                                                {
-                                                                    NullValueHandling = NullValueHandling.Ignore
-                                                                });
+                // string payloadString = JsonConvert.SerializeObject(eventPayload,
+                //                                                 Formatting.None,
+                //                                                 new JsonSerializerSettings
+                //                                                 {
+                //                                                     NullValueHandling = NullValueHandling.Ignore
+                //                                                 });
+                string payloadString = JsonUtility.ToJson(eventPayload);
+                // string payloadString = new JavaScriptSerializer().Serialize(eventPayload);
 
                 Debug.Log("EventRepository: Payload String: " + payloadString);
 
@@ -168,110 +168,111 @@ namespace com.rudderlabs.unity.library
 
         }
 
+        private static List<string> payloadBuffer = new List<string>();
         private static void PostEventToServer(string payload)
         {
-            Task.Run(() =>
-            {
-                try
-                {
-                    Debug.Log("EventRepository : event db dump started");
-                    // dump events to persistance DB first
-                    PersistEvents(payload);
-                    Debug.Log("EventRepository : event db dump completed");
-
-                    Debug.Log("EventRepository : event network dump started");
-                    // flush Events from DB to server
-                    SendEventsToServer();
-                    Debug.Log("EventRepository : event network dump completed");
-                }
-                catch (Exception e)
-                {
-                    Debug.Log("EventRepository: PostEventToServer: Error: " + e);
-                }
-            });
+            payloadBuffer.Add(payload);
+            ThreadStart jobRef = new ThreadStart(ProcessEvent);
+            Thread processorThread = new Thread(jobRef);
+            processorThread.Start();
         }
 
-        private static async void SendEventsToServer()
+        private static void ProcessEvent()
+        {
+            try
+            {
+                if (payloadBuffer.Count == 0)
+                {
+                    return;
+                }
+                string payload = payloadBuffer[0];
+                payloadBuffer.RemoveAt(0);
+
+                Debug.Log("EventRepository : event db dump started");
+                // dump events to persistance DB first
+                PersistEvents(payload);
+                Debug.Log("EventRepository : event db dump completed");
+
+                Debug.Log("EventRepository : event network dump started");
+                // flush Events from DB to server
+                SendEventsToServer();
+                Debug.Log("EventRepository : event network dump completed");
+            }
+            catch (Exception e)
+            {
+                Debug.Log("EventRepository: PostEventToServer: Error: " + e);
+            }
+        }
+
+        private static void SendEventsToServer()
         {
             Debug.Log("EventRepository : event network dump in func started");
-            using (var client = new HttpClient())
+            if (conn == null)
             {
-                using (var request = new HttpRequestMessage(HttpMethod.Post, endPointUri + "/hello"))
+                CreateConnection();
+                conn.Open();
+            }
+            string payload = null;
+            int batchId = -1;
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandType = CommandType.Text;
+                cmd.CommandText = "SELECT * FROM events ORDER BY updated ASC LIMIT 1;";
+
+                var reader = cmd.ExecuteReader();
+                while (reader.Read())
                 {
-                    Debug.Log("EventRepository : client and request present");
-                    if (conn == null)
-                    {
-                        CreateConnection();
-                        conn.Open();
-                    }
-                    string payload = null;
-                    int batchId = -1;
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        cmd.CommandType = CommandType.Text;
-                        cmd.CommandText = "SELECT * FROM events ORDER BY updated ASC LIMIT 1;";
-
-                        var reader = cmd.ExecuteReader();
-                        while (reader.Read())
-                        {
-                            batchId = reader.GetInt32(0);
-                            payload = reader.GetString(1);
-                            break;
-                        }
-                    }
-
-                    if (payload == null || batchId == -1)
-                    {
-                        Debug.Log("EventRepository : payloadL: " + payload);
-                        Debug.Log("EventRepository : batchIdL: " + batchId);
-                        return;
-                    }
-
-                    if (loggingEnabled)
-                    {
-                        Debug.Log("EventRepository : REQUEST: " + payload);
-                    }
-                    request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
-                    if (loggingEnabled)
-                    {
-                        Debug.Log("EventRepository : REQUEST LENGTH: " + request.Content.ToString());
-                    }
-                    HttpResponseMessage response = await client.SendAsync(request);
-                    string responseString = await response.Content.ReadAsStringAsync();
-                    HttpStatusCode statusCode = response.StatusCode;
-                    if (loggingEnabled)
-                    {
-                        Debug.Log("EventRepository : RESPONSE STATUS_CODE: " + statusCode);
-                        Debug.Log("EventRepository : RESPONSE BODY: " + responseString);
-                    }
-
-                    if (statusCode == HttpStatusCode.OK)
-                    {
-                        if (loggingEnabled)
-                        {
-                            Debug.Log("EventRepository : EVENTS FLUSHED");
-                        }
-
-                        // remove batch from local DB
-                        using (var cmd = conn.CreateCommand())
-                        {
-                            cmd.CommandType = CommandType.Text;
-                            cmd.CommandText = "DELETE FROM events WHERE id = @BatchId";
-
-                            cmd.Parameters.Add(new SqliteParameter
-                            {
-                                ParameterName = "BatchId",
-                                Value = batchId
-                            });
-
-                            var result = cmd.ExecuteNonQuery();
-                        }
-
-                        // call again for more events
-                        SendEventsToServer();
-                    }
+                    batchId = reader.GetInt32(0);
+                    payload = reader.GetString(1);
+                    break;
                 }
             }
+
+            if (payload == null || batchId == -1)
+            {
+                Debug.Log("EventRepository : payloadL: " + payload);
+                Debug.Log("EventRepository : batchIdL: " + batchId);
+                return;
+            }
+            if (!endPointUri.EndsWith("/"))
+            {
+                endPointUri = endPointUri + "/";
+            }
+            var http = (HttpWebRequest)WebRequest.Create(new Uri(endPointUri + "hello"));
+            http.ContentType = "application/json";
+            http.Method = "POST";
+
+            ASCIIEncoding encoding = new ASCIIEncoding();
+            Byte[] bytes = encoding.GetBytes(payload);
+
+            Stream newStream = http.GetRequestStream();
+            newStream.Write(bytes, 0, bytes.Length);
+            newStream.Close();
+
+            var response = http.GetResponse();
+
+            var stream = response.GetResponseStream();
+            var sr = new StreamReader(stream);
+            string content = sr.ReadToEnd();
+
+            if (content.Equals("OK"))
+            {
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.CommandText = "DELETE FROM events WHERE id = @BatchId";
+
+                    cmd.Parameters.Add(new SqliteParameter
+                    {
+                        ParameterName = "BatchId",
+                        Value = batchId
+                    });
+
+                    var result = cmd.ExecuteNonQuery();
+                }
+            }
+
+            SendEventsToServer();
         }
 
         private static void PersistEvents(string payload)

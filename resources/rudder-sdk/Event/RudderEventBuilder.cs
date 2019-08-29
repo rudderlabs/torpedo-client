@@ -47,10 +47,10 @@ namespace com.rudderlabs.unity.library.Event
             }
             if (this.userProperty != null)
             {
-                rudderEvent.message.userProperty = this.userProperty.GetPropertyMap();
+                rudderEvent.rl_message.rl_user_properties = this.userProperty.GetPropertyMap();
             }
-            rudderEvent.message.eventName = eventName;
-            rudderEvent.message.userId = userId;
+            rudderEvent.rl_message.rl_event = eventName;
+            rudderEvent.rl_message.rl_user_id = userId;
             return rudderEvent;
         }
     }
