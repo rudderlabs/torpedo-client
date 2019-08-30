@@ -9,6 +9,9 @@ using Mono.Data.Sqlite;
 using System.Data;
 using System.Threading;
 using System.Runtime.InteropServices;
+using UnityEngine.Networking;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace com.rudderlabs.unity.library
 {
@@ -46,6 +49,8 @@ namespace com.rudderlabs.unity.library
             {
                 CreateConnection();
             }
+
+            ServicePointManager.ServerCertificateValidationCallback = Validator;
 
             totalEvents = 0;
 
@@ -238,6 +243,16 @@ namespace com.rudderlabs.unity.library
             {
                 endPointUri = endPointUri + "/";
             }
+            Debug.Log("EventRepository: EndPointUri: in Func: " + endPointUri);
+            string content = "";
+
+            // var postData = System.Text.Encoding.UTF8.GetBytes(payload);
+            // WebRequest req = WebRequest.Create(endPointUri);
+            // req.Method = 
+            // WebRequest req = WebRequest.Post(endPointUri, payload);
+            // req.SetRequestHeader("Content-Type", "application/json");
+            // Stream stream = req.GetResponse ().GetResponseStream ();
+
             var http = (HttpWebRequest)WebRequest.Create(new Uri(endPointUri + "hello"));
             http.ContentType = "application/json";
             http.Method = "POST";
@@ -253,7 +268,7 @@ namespace com.rudderlabs.unity.library
 
             var stream = response.GetResponseStream();
             var sr = new StreamReader(stream);
-            string content = sr.ReadToEnd();
+            content = sr.ReadToEnd();
 
             if (content.Equals("OK"))
             {
@@ -306,6 +321,12 @@ namespace com.rudderlabs.unity.library
                 Debug.Log("EventRepository: insert query" + cmd.ToString());
                 Debug.Log("EventRepository: insert event: " + result);
             }
+        }
+
+        public static bool Validator(object sender, X509Certificate certificate, X509Chain chain,
+                                      SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
         }
     }
 }
