@@ -120,9 +120,9 @@ namespace com.rudderlabs.unity.library
         }
 
         // end point for flushing events
-        public void Flush()
-        {
-            repository.FlushEventsAsync();
-        }
+        // public void Flush()
+        // {
+        //     repository.FlushEventsAsync();
+        // }
     }
 }

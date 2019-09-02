@@ -8,54 +8,54 @@ namespace com.rudderlabs.unity.library.Event
     {
         // [JsonProperty(PropertyName = "rl_anonymous_id")]
         [SerializeField]
-        internal string rl_anonymous_id = SystemInfo.deviceUniqueIdentifier.ToLower();
+        public string rl_anonymous_id = SystemInfo.deviceUniqueIdentifier.ToLower();
         // [JsonProperty(PropertyName = "rl_address")]
         [SerializeField]
-        internal TraitsAddress rl_address;
+        public TraitsAddress rl_address;
         // [JsonProperty(PropertyName = "rl_age")]
         [SerializeField]
-        internal string rl_age;
+        public string rl_age;
         // [JsonProperty(PropertyName = "rl_birthday")]
         [SerializeField]
-        internal string rl_birthday;
+        public string rl_birthday;
         // [JsonProperty(PropertyName = "rl_company")]
         [SerializeField]
-        internal TraitsCompany rl_company;
+        public TraitsCompany rl_company;
         // [JsonProperty(PropertyName = "rl_createdat")]
         [SerializeField]
-        internal string rl_createdat;
+        public string rl_createdat;
         // [JsonProperty(PropertyName = "rl_description")]
         [SerializeField]
-        internal string rl_description;
+        public string rl_description;
         // [JsonProperty(PropertyName = "rl_email")]
         [SerializeField]
-        internal string rl_email;
+        public string rl_email;
         // [JsonProperty(PropertyName = "rl_firstname")]
         [SerializeField]
-        internal string rl_firstname;
+        public string rl_firstname;
         // [JsonProperty(PropertyName = "rl_gender")]
         [SerializeField]
-        internal string rl_gender;
+        public string rl_gender;
         // [JsonProperty(PropertyName = "rl_id")]
         [SerializeField]
-        internal string rl_id;
+        public string rl_id;
         // [JsonProperty(PropertyName = "rl_lastname")]
         [SerializeField]
-        internal string rl_lastname;
+        public string rl_lastname;
         // [JsonProperty(PropertyName = "rl_name")]
         [SerializeField]
-        internal string rl_name;
+        public string rl_name;
         // [JsonProperty(PropertyName = "rl_phone")]
         [SerializeField]
-        internal string rl_phone;
+        public string rl_phone;
         // [JsonProperty(PropertyName = "rl_title")]
         [SerializeField]
-        internal string rl_title;
+        public string rl_title;
         // [JsonProperty(PropertyName = "rl_username")]
         [SerializeField]
-        internal string rl_username;
+        public string rl_username;
 
-        internal RudderTraits()
+        public RudderTraits()
         {
 
         }
@@ -85,19 +85,24 @@ namespace com.rudderlabs.unity.library.Event
     {
         // [JsonProperty(PropertyName = "rl_city")]
         [SerializeField]
-        internal string rl_city;
+        public string rl_city;
         // [JsonProperty(PropertyName = "rl_country")]
         [SerializeField]
-        internal string rl_country;
+        public string rl_country;
         // [JsonProperty(PropertyName = "rl_postalcode")]
         [SerializeField]
-        internal string rl_postalcode;
+        public string rl_postalcode;
         // [JsonProperty(PropertyName = "rl_state")]
         [SerializeField]
-        internal string rl_state;
+        public string rl_state;
         // [JsonProperty(PropertyName = "rl_street")]
         [SerializeField]
-        internal string rl_street;
+        public string rl_street;
+
+        public TraitsAddress()
+        {
+
+        }
 
         public TraitsAddress(string city, string country, string postalCode, string state, string street)
         {
@@ -114,13 +119,18 @@ namespace com.rudderlabs.unity.library.Event
     {
         // [JsonProperty(PropertyName = "rl_name")]
         [SerializeField]
-        internal string rl_name;
+        public string rl_name;
         // [JsonProperty(PropertyName = "rl_id")]
         [SerializeField]
-        internal string rl_id;
+        public string rl_id;
         // [JsonProperty(PropertyName = "rl_industry")]
         [SerializeField]
-        internal string rl_industry;
+        public string rl_industry;
+
+        public TraitsCompany()
+        {
+
+        }
 
         public TraitsCompany(string name, string id, string industry)
         {

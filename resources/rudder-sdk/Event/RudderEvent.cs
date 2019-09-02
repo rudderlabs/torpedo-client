@@ -12,13 +12,16 @@ namespace com.rudderlabs.unity.library.Event
     {
         // [JsonProperty(PropertyName = "rl_message")]
         [SerializeField]
-        internal RudderMessage rl_message = new RudderMessage();
+        public RudderMessage rl_message = new RudderMessage();
         // API for setting event level integrations
         // Useful if the developer wants to set additional integration platform 
         // for a particular set of events
         public void AddIntegrations(RudderIntegrationPlatform platform)
         {
-            rl_message.rl_integrations.Add(platform.value, true);
+            if (!rl_message.rl_integrations.ContainsKey(platform.value))
+            {
+                rl_message.rl_integrations.Add(platform.value, true);
+            }
         }
         // API for setting event level properties
         // throws exception if "." is present in the key name
@@ -38,6 +41,10 @@ namespace com.rudderlabs.unity.library.Event
         {
             this.SetProperties(_properties.GetPropertyMap());
         }
+
+        public RudderEvent() {
+            
+        }
     }
 
     [Serializable]
@@ -45,45 +52,46 @@ namespace com.rudderlabs.unity.library.Event
     {
         // [JsonProperty(PropertyName = "rl_channel")]
         [SerializeField]
-        internal string rl_channel = "rudder-unity-client";
+        public string rl_channel = "rudder-unity-client";
         // [JsonProperty(PropertyName = "rl_context")]
         [SerializeField]
-        internal RudderContext rl_context = new RudderContext();
+        public RudderContext rl_context = new RudderContext();
         // [JsonProperty(PropertyName = "rl_type")]
         [SerializeField]
-        internal string rl_type;
+        public string rl_type;
         // [JsonProperty(PropertyName = "rl_action")]
         [SerializeField]
-        internal string rl_action = "";
+        public string rl_action = "";
         // [JsonProperty(PropertyName = "rl_message_id")]
         [SerializeField]
-        internal string rl_message_id = Stopwatch.GetTimestamp().ToString() + "-" + System.Guid.NewGuid().ToString();
+        public string rl_message_id = Stopwatch.GetTimestamp().ToString() + "-" + System.Guid.NewGuid().ToString();
         // [JsonProperty(PropertyName = "rl_timestamp")]
         [SerializeField]
-        internal string rl_timestamp = DateTime.UtcNow.ToString("u");
+        public string rl_timestamp = DateTime.UtcNow.ToString("u");
         // [JsonProperty(PropertyName = "rl_anonymous_id")]
         [SerializeField]
-        internal string rl_anonymous_id;
+        public string rl_anonymous_id;
         // [JsonProperty(PropertyName = "rl_user_id")]
         [SerializeField]
-        internal string rl_user_id;
+        public string rl_user_id;
         // [JsonProperty(PropertyName = "rl_event")]
         [SerializeField]
-        internal string rl_event;
+        public string rl_event;
         // [JsonProperty(PropertyName = "rl_properties")]
         [SerializeField]
-        internal Dictionary<string, object> rl_properties;
+        public Dictionary<string, object> rl_properties;
         // [JsonProperty(PropertyName = "rl_user_properties")]
         [SerializeField]
-        internal Dictionary<string, object> rl_user_properties;
+        public Dictionary<string, object> rl_user_properties;
         // [JsonProperty(PropertyName = "rl_integrations")]
         [SerializeField]
-        internal Dictionary<string, bool> rl_integrations = new Dictionary<string, bool>();
+        public Dictionary<string, bool> rl_integrations = new Dictionary<string, bool>();
 
-        internal RudderMessage()
+        public RudderMessage()
         {
             rl_integrations.Add(RudderIntegrationPlatform.ALL.value, false);
-            rl_integrations.Add(RudderIntegrationPlatform.GOOGLE_ANALYTICS.value, false);
+            rl_integrations.Add(RudderIntegrationPlatform.GOOGLE_ANALYTICS.value, true);
+            rl_integrations.Add(RudderIntegrationPlatform.AMPLITUDE.value, true);
             rl_anonymous_id = SystemInfo.deviceUniqueIdentifier.ToLower();
         }
     }
@@ -93,75 +101,75 @@ namespace com.rudderlabs.unity.library.Event
     {
         [SerializeField]
         // [JsonProperty(PropertyName = "rl_app")]
-        internal RudderApp rl_app = new RudderApp();
+        public RudderApp rl_app = new RudderApp();
         // [JsonProperty(PropertyName = "rl_platform")]
         [SerializeField]
-        internal string rl_platform = Application.platform.ToString();
+        public string rl_platform = Application.platform.ToString();
         // [JsonProperty(PropertyName = "rl_traits")]
         [SerializeField]
-        internal RudderTraits rl_traits = new RudderTraits();
+        public RudderTraits rl_traits = new RudderTraits();
         // [JsonProperty(PropertyName = "rl_library")]
         [SerializeField]
-        internal RudderLibraryInfo rl_library = new RudderLibraryInfo();
+        public RudderLibraryInfo rl_library = new RudderLibraryInfo();
         // [JsonProperty(PropertyName = "rl_os")]
         [SerializeField]
-        internal RudderOsInfo rl_os = new RudderOsInfo();
+        public RudderOsInfo rl_os = new RudderOsInfo();
         // [JsonProperty(PropertyName = "rl_screen")]
         [SerializeField]
-        internal RudderScreenInfo rl_screen = new RudderScreenInfo();
+        public RudderScreenInfo rl_screen = new RudderScreenInfo();
         // [JsonProperty(PropertyName = "rl_user_agent")]
         [SerializeField]
-        internal string rl_user_agent = "RudderUnitySdk";
+        public string rl_user_agent = "RudderUnitySdk";
         // [JsonProperty(PropertyName = "rl_locale")]
         [SerializeField]
-        internal string rl_locale = Application.systemLanguage.ToString();
+        public string rl_locale = Application.systemLanguage.ToString();
         // [JsonProperty(PropertyName = "rl_device")]
         [SerializeField]
-        internal RudderDeviceInfo rl_device = new RudderDeviceInfo();
+        public RudderDeviceInfo rl_device = new RudderDeviceInfo();
         // [JsonProperty(PropertyName = "rl_network")]
         [SerializeField]
-        internal RudderNetwork rl_network = new RudderNetwork();
+        public RudderNetwork rl_network = new RudderNetwork();
     }
 
     [Serializable]
-    class RudderApp
+    public class RudderApp
     {
         // [JsonProperty(PropertyName = "rl_build")]
         [SerializeField]
-        internal string rl_build = Application.productName;
+        public string rl_build = Application.productName;
         // [JsonProperty(PropertyName = "rl_name")]
         [SerializeField]
-        internal string rl_name = Application.productName;
+        public string rl_name = Application.productName;
         // [JsonProperty(PropertyName = "rl_namespace")]
         [SerializeField]
-        internal string rl_namespace = Application.identifier;
+        public string rl_namespace = Application.identifier;
         // [JsonProperty(PropertyName = "rl_version")]
         [SerializeField]
-        internal string rl_version = Application.version;
+        public string rl_version = Application.version;
     }
 
     [Serializable]
-    class RudderLibraryInfo
+    public class RudderLibraryInfo
     {
         // [JsonProperty(PropertyName = "rl_name")]
         [SerializeField]
-        internal string rl_name = "com.rudderlabs.unity.client";
+        public string rl_name = "com.rudderlabs.unity.client";
         // [JsonProperty(PropertyName = "rl_version")]
         [SerializeField]
-        internal string rl_version = "1.0.0";
+        public string rl_version = "1.0.0";
     }
 
     [Serializable]
-    class RudderOsInfo
+    public class RudderOsInfo
     {
         // [JsonProperty(PropertyName = "rl_name")]
         [SerializeField]
-        internal string rl_name = SystemInfo.operatingSystem.Split()[0];
+        public string rl_name = SystemInfo.operatingSystem.Split()[0];
         // [JsonProperty(PropertyName = "rl_version")]
         [SerializeField]
-        internal string rl_version;
+        public string rl_version;
 
-        internal RudderOsInfo()
+        public RudderOsInfo()
         {
 #if UNITY_IOS
             rl_version = SystemInfo.operatingSystem.Split()[1];
@@ -172,41 +180,41 @@ namespace com.rudderlabs.unity.library.Event
     }
 
     [Serializable]
-    class RudderScreenInfo
+    public class RudderScreenInfo
     {
         // [JsonProperty(PropertyName = "rl_density")]
         [SerializeField]
-        internal int rl_density = (int)Screen.dpi;
+        public int rl_density = (int)Screen.dpi;
         // [JsonProperty(PropertyName = "rl_width")]
         [SerializeField]
-        internal int rl_width = Screen.width;
+        public int rl_width = Screen.width;
         // [JsonProperty(PropertyName = "rl_height")]
         [SerializeField]
-        internal int rl_height = Screen.height;
+        public int rl_height = Screen.height;
     }
 
     [Serializable]
-    class RudderDeviceInfo
+    public class RudderDeviceInfo
     {
         // [JsonProperty(PropertyName = "rl_id")]
         [SerializeField]
-        internal string rl_id = SystemInfo.deviceUniqueIdentifier.ToLower();
+        public string rl_id = SystemInfo.deviceUniqueIdentifier.ToLower();
         // [JsonProperty(PropertyName = "rl_manufacturer")]
         [SerializeField]
-        internal string rl_manufacturer = SystemInfo.deviceModel;
+        public string rl_manufacturer = SystemInfo.deviceModel;
         // [JsonProperty(PropertyName = "rl_model")]
         [SerializeField]
-        internal string rl_model = SystemInfo.deviceModel;
+        public string rl_model = SystemInfo.deviceModel;
         // [JsonProperty(PropertyName = "rl_name")]
         [SerializeField]
-        internal string rl_name = SystemInfo.deviceName;
+        public string rl_name = SystemInfo.deviceName;
     }
 
     [Serializable]
-    class RudderNetwork
+    public class RudderNetwork
     {
         // [JsonProperty(PropertyName = "rl_carrier")]
         [SerializeField]
-        internal string rl_carrier = EventRepository.carrier;
+        public string rl_carrier = EventRepository.carrier;
     }
 }

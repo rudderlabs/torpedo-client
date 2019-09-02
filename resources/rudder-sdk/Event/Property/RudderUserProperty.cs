@@ -6,16 +6,17 @@ namespace com.rudderlabs.unity.library.Event.Property
     {
         private Dictionary<string, object> map = new Dictionary<string, object>();
 
-        internal Dictionary<string, object> GetPropertyMap() {
+        internal Dictionary<string, object> GetPropertyMap()
+        {
             return map;
         }
 
-        public void AddProperty(string key, object value)
+        public void AddProperty(string key, string value)
         {
             map[key] = value;
         }
 
-        public void AddProperties(Dictionary<string, object> keyValues)
+        public void AddProperties(Dictionary<string, string> keyValues)
         {
             foreach (var key in keyValues.Keys)
             {

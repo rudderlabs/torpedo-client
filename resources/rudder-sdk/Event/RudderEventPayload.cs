@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace com.rudderlabs.unity.library.Event
 {
-    internal class RudderEventPayload
+    public class RudderEventPayload
     {
         // [JsonProperty(PropertyName = "sent_at")]
         public string sent_at = DateTime.UtcNow.ToString("u");
@@ -13,7 +13,7 @@ namespace com.rudderlabs.unity.library.Event
         // [JsonProperty(PropertyName = "writeKey")]
         public string writeKey;
 
-        internal RudderEventPayload(string _writeKey, List<RudderEvent> _events)
+        public RudderEventPayload(string _writeKey, List<RudderEvent> _events)
         {
             // Debug.Log("EventRepository: DateTime.UtcNow.ToString(): " + DateTime.UtcNow.ToString("u"));
             batch = _events;
