@@ -135,7 +135,7 @@ namespace com.rudderlabs.unity.library
                 }
                 catch (Exception e)
                 {
-                    // Debug.Log("EventRepository: EVENT ERROR" + e.Message);
+                    Debug.Log("EventRepository: EVENT ERROR" + e.Message);
                 }
             }
 
@@ -144,15 +144,6 @@ namespace com.rudderlabs.unity.library
             writer.PrettyPrint = false;
             JsonMapper.ToJson(payload, writer);
             return writer.ToString();
-
-            // StringBuilder batchBuilder = new StringBuilder();
-            // batchBuilder.Append("{");
-            // batchBuilder.Append("\"sent_at\":").Append("\"" + DateTime.UtcNow.ToString("u") + "\",");
-            // batchBuilder.Append("\"batch\":").Append(batchStr + ",");
-            // batchBuilder.Append("\"write_key\":").Append("\"" + writeKey + "\"");
-            // batchBuilder.Append("}");
-
-            // return batchBuilder.ToString();
         }
 
         private void ProcessThread(object obj)
@@ -225,7 +216,7 @@ namespace com.rudderlabs.unity.library
             }
             catch (Exception ex)
             {
-                // Debug.Log("EventRepository DB ERROR: " + ex);
+                Debug.Log("EventRepository DB ERROR: " + ex.Message);
             }
         }
 
@@ -258,7 +249,6 @@ namespace com.rudderlabs.unity.library
         {
             try
             {
-                // string eventString = JsonUtility.ToJson(rudderEvent);
                 // Debug.Log("EventRepository: EVENT DUMPED MESSAGE_ID" + rudderEvent.rl_message.rl_message_id);
 
                 JsonWriter writer = new JsonWriter();
@@ -287,7 +277,7 @@ namespace com.rudderlabs.unity.library
             }
             catch (Exception e)
             {
-                // Debug.Log("EventRepository: EVENT DUMPED" + e);
+                Debug.Log("EventRepository: EVENT DUMPED" + e.Message);
             }
 
         }
