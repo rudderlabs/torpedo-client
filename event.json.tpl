@@ -3,6 +3,7 @@
     "batch": [
         {
             "rl_message": {
+                "rl_anonymous_id": "49e4bdd1c280bc00",
                 "rl_channel": "android-sdk",
                 "rl_destination_props": {
                     "AF": {
@@ -45,7 +46,7 @@
                 "rl_properties": {
                     "label": "Demo Label",
                     "category": "Demo Category",
-                    "value": "Demo Value"
+                    "value": 5
                 },
                 "rl_timestamp": "2019-08-27 11:12:55+0000",
                 "rl_type": "track"
