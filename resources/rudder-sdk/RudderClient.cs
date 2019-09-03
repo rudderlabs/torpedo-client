@@ -9,42 +9,50 @@ namespace com.rudderlabs.unity.library
         private static RudderClient instance;
         // instance for event repository (to be used internally)
         private static EventRepository repository;
-
-        private RudderClient() {
+        private RudderClient()
+        {
             // prevent instance creation through constructor
         }
-
         // instance initialization method
         public static RudderClient GetInstance(string writeKey)
         {
             return GetInstance(writeKey, Constants.BASE_URL, Constants.FLUSH_QUEUE_SIZE);
         }
-
         // instance initialization method
         public static RudderClient GetInstance(string writeKey, int flushQueueSize)
         {
             return GetInstance(writeKey, Constants.BASE_URL, flushQueueSize);
         }
-
         // instance initialization method
         public static RudderClient GetInstance(string writeKey, string endPointUri)
         {
             return GetInstance(writeKey, endPointUri, Constants.FLUSH_QUEUE_SIZE);
         }
-
         // instance initialization method
-        public static RudderClient GetInstance(string writeKey, string endPointUri, int flushQueueSize) {
+        public static RudderClient GetInstance(string writeKey, string endPointUri, int flushQueueSize)
+        {
+            return GetInstance(writeKey, endPointUri, flushQueueSize, Constants.WAIT_TIME_OUT);
+        }
+        public static RudderClient GetInstance(string writeKey, string endPointUri, int flushQueueSize, int waitTimeOut)
+        {
+            return GetInstance(writeKey, endPointUri, flushQueueSize, waitTimeOut, Constants.DB_COUNT_THRESHOLD);
+        }
+        public static RudderClient GetInstance(string writeKey, string endPointUri, int flushQueueSize, int waitTimeOut, int dbCountThreshold)
+        {
             if (instance == null)
             {
                 instance = new RudderClient();
 
-                repository = new EventRepository(writeKey, flushQueueSize, endPointUri);
+                repository = new EventRepository(writeKey, flushQueueSize, endPointUri, waitTimeOut, dbCountThreshold);
             }
+
             return instance;
         }
 
-        public void enableLog(bool _logging) {
-            if (repository == null) {
+        public void enableLog(bool _logging)
+        {
+            if (repository == null)
+            {
                 throw new RudderException("Client is not initialized");
             }
             repository.enableLogging(_logging);
