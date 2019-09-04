@@ -1,4 +1,4 @@
-﻿//  -----------------------------------------------------------------------
+//  -----------------------------------------------------------------------
 //  <copyright file="WynnAnalyticsManager.cs" company="Torpedo Labs">
 //   Copyright (c) 2017 Torpedo Labs All rights reserved.
 //  </copyright>
@@ -57,10 +57,12 @@ namespace Com.TorpedoLabs.Wynn.Analytics
             wrappers = new List<IAnalyticsLibraryWrapper>();
             wrappers.Add(SetupFacebook());
             wrappers.Add(SetupAmplitude());
-
+#if !UNITY_EDITOR
+            //Rudder SDK only works on device, crashes and has errors when running in editor.
             //Add Rudder Client to wrapper collection
+            GameEngine.LogError("WynnAnalyticsManager: Initialized RudderWrapper");
             wrappers.Add(SetupRudder());
-
+#endif
             spinResults = null;
         }
 
@@ -85,6 +87,11 @@ namespace Com.TorpedoLabs.Wynn.Analytics
         public void AppendAppsFlyer()
         {
             wrappers.Add(SetupAppsFlyer());
+        }
+
+        public void AppendAdjustManager()
+        {
+            wrappers.Add(SetupAdjustManager());
         }
 
         public void ResumeSession()
@@ -186,14 +193,22 @@ namespace Com.TorpedoLabs.Wynn.Analytics
         {
             RudderAnalyticsManager manager = new RudderAnalyticsManager();
             manager.Init(this);
+            GameEngine.LogError("WynnAnalyticsManager: Initialized RudderAnalyticsManager");
             return manager;
         }
 
         private IAnalyticsLibraryWrapper SetupAppsFlyer()
         {
-            AppsFlyerAnalyticsManager fbAnalyticsManager = new AppsFlyerAnalyticsManager();
-            fbAnalyticsManager.Init(this);
-            return fbAnalyticsManager;
+            AppsFlyerAnalyticsManager afAnalyticsManager = new AppsFlyerAnalyticsManager();
+            afAnalyticsManager.Init(this);
+            return afAnalyticsManager;
+        }
+
+        private IAnalyticsLibraryWrapper SetupAdjustManager()
+        {
+            AdjustAnalyticsManager adjustAnalyticsManager = new AdjustAnalyticsManager();
+            adjustAnalyticsManager.Init(this);
+            return adjustAnalyticsManager;
         }
 
         public Dictionary<string, object> EventsCommonData()
@@ -277,13 +292,13 @@ namespace Com.TorpedoLabs.Wynn.Analytics
             }
         }
 
-        public void RecordPurchase(string id, double price, double amountPurchased, string currency = null, string store = null)
+        public void RecordPurchase(string id, double price, double amountPurchased, string currency = null, string store = null, string transactionId = null)
         {
             if (wrappers != null)
             {
                 foreach (var wrapper in wrappers)
                 {
-                    wrapper.RecordPurchase(id, price, amountPurchased, currency, store);
+                    wrapper.RecordPurchase(id, price, amountPurchased, currency, store, transactionId);
                 }
             }
         }
@@ -303,6 +318,7 @@ namespace Com.TorpedoLabs.Wynn.Analytics
                                      string featureGameType,
                                      long betLevel,
                                      int additionalBetIndex,
+                                     string bingoDroppedNumbers,
                                      string extraParams)
         {
             string wonProgressiveType = string.Empty;
@@ -341,6 +357,7 @@ namespace Com.TorpedoLabs.Wynn.Analytics
                     FeatureGameType = featureGameType,
                     BetLevel = betLevel,
                     AdditionalBetIndex = additionalBetIndex,
+                    BingoDroppedNumbers = bingoDroppedNumbers,
                     EParam = extraParams
                 };
             }
@@ -357,6 +374,7 @@ namespace Com.TorpedoLabs.Wynn.Analytics
                 spinResults.IsF = isF;
                 spinResults.BetLevel = betLevel;
                 spinResults.AdditionalBetIndex = additionalBetIndex;
+                spinResults.BingoDroppedNumbers = bingoDroppedNumbers;
                 if (StringExtensions.HasValue(extraParams) && StringExtensions.HasValue(spinResults.EParam))
                 {
                     spinResults.EParam += "&" + extraParams;
@@ -400,6 +418,7 @@ namespace Com.TorpedoLabs.Wynn.Analytics
             data[WynnAnalyticsDataConstants.AT_FEATURE_GAME_TYPE] = spinResults.FeatureGameType;
             data[WynnAnalyticsDataConstants.ME_BET_LEVEL] = spinResults.BetLevel;
             data[WynnAnalyticsDataConstants.ME_ADDITIONAL_BET_INDEX] = spinResults.AdditionalBetIndex;
+            data[WynnAnalyticsDataConstants.AT_BINGO_DROPPED_NUMBERS] = spinResults.BingoDroppedNumbers;
             data[WynnAnalyticsDataConstants.AT_EXTRA_PARAM] = spinResults.EParam;
             data[WynnAnalyticsDataConstants.ME_DAYS_IN_GAME] = WynnEngine.GetStateController<PlayerStatsStateController>().AgeInDays;
 
@@ -693,12 +712,30 @@ namespace Com.TorpedoLabs.Wynn.Analytics
             RecordCustomEvent(WynnAnalyticsDataConstants.AE_RECORD_LOBBY_FPS, null);
         }
 
-        public void LogServiceErrorEvent(int failedResponseResultCode, string responseName)
+        public void LogServiceErrorEvent(int failedResponseResultCode, string responseName, long httpResponseCode)
         {
             var parameters = new Dictionary<string, object>();
             parameters[WynnAnalyticsDataConstants.AT_SERVER_RESPONSE_RESULT] = failedResponseResultCode;
             parameters[WynnAnalyticsDataConstants.AT_SERVER_RESPONSE_NAME] = responseName;
+            parameters[WynnAnalyticsDataConstants.AT_HTTP_RESPONSE_CODE] = httpResponseCode;
             RecordCustomEvent(WynnAnalyticsDataConstants.AE_RECORD_SERVER_RESPONSE_ERROR, parameters);
+        }
+
+        public void LogBatchError(string batcherUrl, long httpResponseCode)
+        {
+            var parameters = new Dictionary<string, object>();
+            parameters[WynnAnalyticsDataConstants.AT_BATCH_URL] = batcherUrl;
+            parameters[WynnAnalyticsDataConstants.AT_HTTP_RESPONSE_CODE] = httpResponseCode;
+            RecordCustomEvent(WynnAnalyticsDataConstants.AE_RECORD_BATCH_ERROR, parameters);
+        }
+
+        public void LogBundleLoadError(string bundleUrl, string error, long httpResponseCode)
+        {
+            var parameters = new Dictionary<string, object>();
+            parameters[WynnAnalyticsDataConstants.AT_BUNDLE_URL] = bundleUrl;
+            parameters[WynnAnalyticsDataConstants.AT_ERROR] = error;
+            parameters[WynnAnalyticsDataConstants.AT_HTTP_RESPONSE_CODE] = httpResponseCode;
+            RecordCustomEvent(WynnAnalyticsDataConstants.AE_RECORD_BUNDLE_LOAD_ERROR, parameters);
         }
 
         public void RecordeLevelUpEvent(int level, string rewardType1, long rewardAmount1, string rewardType2, long rewardAmount2)
@@ -956,6 +993,19 @@ namespace Com.TorpedoLabs.Wynn.Analytics
         }
         #endregion
 
+        #region Bingo
+
+        public void RecordBingoRewardClaim(string wonLineIndices, string wonLineNumbers, string ranking, string rewardType)
+        {
+            var parameters = new Dictionary<string, object>();
+            parameters[WynnAnalyticsDataConstants.AT_BINGO_WON_LINE_INDICES] = wonLineIndices;
+            parameters[WynnAnalyticsDataConstants.AT_BINGO_WON_LINE_NUMBERS] = wonLineNumbers;
+            parameters[WynnAnalyticsDataConstants.AT_BINGO_REWARD_TIER] = ranking;
+            parameters[WynnAnalyticsDataConstants.AT_BINGO_REWARD_TYPE] = rewardType;
+            RecordCustomEvent(WynnAnalyticsDataConstants.AE_BINGO_REWARD_CLAIM, parameters);
+        }
+
+        #endregion
 
         public static string GetWinLossTieString(bool isTie, bool isWin)
         {

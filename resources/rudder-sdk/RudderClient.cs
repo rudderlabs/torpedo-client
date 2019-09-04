@@ -1,5 +1,6 @@
 ﻿using com.rudderlabs.unity.library.Errors;
 using com.rudderlabs.unity.library.Event;
+using UnityEngine;
 
 namespace com.rudderlabs.unity.library
 {
@@ -41,6 +42,7 @@ namespace com.rudderlabs.unity.library
         {
             if (instance == null)
             {
+                Debug.Log("RudderSDK: RudderClient: Initialized");
                 instance = new RudderClient();
 
                 repository = new EventRepository(writeKey, flushQueueSize, endPointUri, waitTimeOut, dbCountThreshold);

@@ -49,6 +49,7 @@ namespace com.rudderlabs.unity.library
             loggingEnabled = false;
 
             dbPath = "URI=file:" + Application.persistentDataPath + "/rl_persistance.db";
+            Debug.Log("RudderSDK: dbPath: " + dbPath);
             if (conn == null)
             {
                 CreateConnection();
@@ -75,102 +76,49 @@ namespace com.rudderlabs.unity.library
             Thread t = new Thread(ProcessThread);
             t.Start();
         }
-
-        private string SendEventsToServer(string payload)
+        private static void CreateConnection()
         {
+            Debug.Log("RudderSDK: creating connection");
             try
             {
-                if (!endPointUri.EndsWith("/", StringComparison.Ordinal))
-                {
-                    endPointUri = endPointUri + "/";
-                }
-                Debug.Log("EventRepository: EndPointUri: in Func: " + endPointUri);
-                var http = (HttpWebRequest)WebRequest.Create(new Uri(endPointUri + "hello"));
-                http.ContentType = "application/json";
-                http.Method = "POST";
-
-                ASCIIEncoding encoding = new ASCIIEncoding();
-                byte[] bytes = encoding.GetBytes(payload);
-
-                Stream newStream = http.GetRequestStream();
-                newStream.Write(bytes, 0, bytes.Length);
-                newStream.Close();
-
-                var response = http.GetResponse();
-
-                var stream = response.GetResponseStream();
-                var sr = new StreamReader(stream);
-                return sr.ReadToEnd();
+                conn = new SqliteConnection(dbPath);
+                Debug.Log("RudderSDK: CreateConnection SUCESS: ");
             }
             catch (Exception ex)
             {
-                Debug.Log("EventRepository: SendEventsToServer: Error: " + ex.Message);
+                Debug.Log("RudderSDK: CreateConnection ERROR: " + ex.Message);
             }
-            return null;
         }
-
-        private void FetchEventsFromDB(List<int> messageIds, List<string> messages, int eventCount)
+        private void CreateSchema()
         {
             try
             {
                 if (conn == null)
                 {
                     CreateConnection();
-                    conn.Open();
                 }
+
+                conn.Open();
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandType = CommandType.Text;
-                    cmd.CommandText = "SELECT * FROM events ORDER BY updated ASC LIMIT " + eventCount.ToString() + ";";
-
-                    var reader = cmd.ExecuteReader();
-
-                    while (reader.Read())
+                    cmd.CommandText = "CREATE TABLE IF NOT EXISTS 'events' ( " +
+                                      "  'id' INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                                      "  'event' TEXT NOT NULL, " +
+                                      "  'updated' INTEGER NOT NULL" +
+                                      ");";
+                    var result = cmd.ExecuteNonQuery();
+                    if (loggingEnabled)
                     {
-                        messageIds.Add(reader.GetInt32(0));
-                        string messageString = reader.GetString(1);
-                        messages.Add(messageString);
-
-                        Debug.Log("EventRepository: fetch: " + messageString);
+                        Debug.Log("RudderSDK: CreateSchema: Success: " + result);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.Log("EventRepository: FetchEventsFromDB: Error: " + ex.Message);
+                Debug.Log("RudderSDK: CreateSchema ERROR: " + ex.Message);
             }
-        }
 
-        private string FormatJsonFromMessages(List<string> messages)
-        {
-            try
-            {
-                List<RudderEvent> eventList = new List<RudderEvent>();
-                foreach (string message in messages)
-                {
-                    try
-                    {
-                        RudderEvent rlEvent = JsonMapper.ToObject<RudderEvent>(message);
-                        Debug.Log("EventRepository: EVENT RETRIEVED" + rlEvent.rl_message.rl_message_id);
-                        eventList.Add(rlEvent);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.Log("EventRepository: EVENT ERROR" + e.Message);
-                    }
-                }
-
-                RudderEventPayload payload = new RudderEventPayload(writeKey, eventList);
-                JsonWriter writer = new JsonWriter();
-                writer.PrettyPrint = false;
-                JsonMapper.ToJson(payload, writer);
-                return writer.ToString();
-            }
-            catch (Exception ex)
-            {
-                Debug.Log("EventRepository: FormatJsonFromMessages: Error: " + ex.Message);
-            }
-            return null;
         }
 
         private void ProcessThread(object obj)
@@ -191,20 +139,20 @@ namespace com.rudderlabs.unity.library
                 messageIds.Clear();
                 messages.Clear();
                 FetchEventsFromDB(messageIds, messages, flushQueueSize);
-                Debug.Log("EventRepository: In Loop: " + messages.Count);
+                Debug.Log("RudderSDK: In Loop: " + messages.Count);
                 if (messages.Count >= flushQueueSize || (messages.Count > 0 && sleepCount >= waitTimeOut))
                 {
                     string payload = FormatJsonFromMessages(messages);
 
                     if (payload != null)
                     {
-                        Debug.Log("EventRepository: PAYLOAD: " + payload);
+                        Debug.Log("RudderSDK: PAYLOAD: " + payload);
 
                         string response = SendEventsToServer(payload);
 
                         if (response != null)
                         {
-                            Debug.Log("EventRepository: response: " + response + " | " + messages.Count.ToString());
+                            Debug.Log("RudderSDK: response: " + response + " | " + messages.Count.ToString());
 
                             if (response.Equals("OK"))
                             {
@@ -242,18 +190,114 @@ namespace com.rudderlabs.unity.library
                     while (reader.Read())
                     {
                         dbCount = reader.GetInt32(0);
-                        Debug.Log("EventRepository: GetDBRecordCount: " + dbCount.ToString());
+                        Debug.Log("RudderSDK: GetDBRecordCount: " + dbCount.ToString());
                         break;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.Log("EventRepository: FetchEventsFromDB: Error: " + ex.Message);
+                Debug.Log("RudderSDK: FetchEventsFromDB: Error: " + ex.Message);
             }
             return dbCount;
         }
 
+        private void FetchEventsFromDB(List<int> messageIds, List<string> messages, int eventCount)
+        {
+            try
+            {
+                if (conn == null)
+                {
+                    CreateConnection();
+                    conn.Open();
+                }
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandType = CommandType.Text;
+                    cmd.CommandText = "SELECT * FROM events ORDER BY updated ASC LIMIT " + eventCount.ToString() + ";";
+
+                    var reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        messageIds.Add(reader.GetInt32(0));
+                        string messageString = reader.GetString(1);
+                        messages.Add(messageString);
+
+                        Debug.Log("RudderSDK: fetch: " + messageString);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("RudderSDK: FetchEventsFromDB: Error: " + ex.Message);
+            }
+        }
+
+
+        private string SendEventsToServer(string payload)
+        {
+            try
+            {
+                if (!endPointUri.EndsWith("/", StringComparison.Ordinal))
+                {
+                    endPointUri = endPointUri + "/";
+                }
+                Debug.Log("RudderSDK: EndPointUri: in Func: " + endPointUri);
+                var http = (HttpWebRequest)WebRequest.Create(new Uri(endPointUri + "hello"));
+                http.ContentType = "application/json";
+                http.Method = "POST";
+
+                ASCIIEncoding encoding = new ASCIIEncoding();
+                byte[] bytes = encoding.GetBytes(payload);
+
+                Stream newStream = http.GetRequestStream();
+                newStream.Write(bytes, 0, bytes.Length);
+                newStream.Close();
+
+                var response = http.GetResponse();
+
+                var stream = response.GetResponseStream();
+                var sr = new StreamReader(stream);
+                return sr.ReadToEnd();
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("RudderSDK: SendEventsToServer: Error: " + ex.Message);
+            }
+            return null;
+        }
+        private string FormatJsonFromMessages(List<string> messages)
+        {
+            try
+            {
+                List<RudderEvent> eventList = new List<RudderEvent>();
+                foreach (string message in messages)
+                {
+                    try
+                    {
+                        RudderEvent rlEvent = JsonMapper.ToObject<RudderEvent>(message);
+                        Debug.Log("RudderSDK: EVENT RETRIEVED" + rlEvent.rl_message.rl_message_id);
+                        eventList.Add(rlEvent);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.Log("RudderSDK: EVENT ERROR" + e.Message);
+                    }
+                }
+
+                RudderEventPayload payload = new RudderEventPayload(writeKey, eventList);
+                JsonWriter writer = new JsonWriter();
+                writer.PrettyPrint = false;
+                JsonMapper.ToJson(payload, writer);
+                return writer.ToString();
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("RudderSDK: FormatJsonFromMessages: Error: " + ex.Message);
+            }
+            return null;
+        }
         private void ClearEventsFromDB(List<int> messageIds)
         {
             try
@@ -271,7 +315,7 @@ namespace com.rudderlabs.unity.library
                             Value = messageId
                         });
 
-                        Debug.Log("EventRepository: delete: " + messageId);
+                        Debug.Log("RudderSDK: delete: " + messageId);
 
                         cmd.ExecuteNonQuery();
                     }
@@ -279,65 +323,26 @@ namespace com.rudderlabs.unity.library
             }
             catch (Exception ex)
             {
-                Debug.Log("EventRepository: ClearEventsFromDB: Error: " + ex.Message);
+                Debug.Log("RudderSDK: ClearEventsFromDB: Error: " + ex.Message);
             }
         }
-
         internal void enableLogging(bool _isEnabled)
         {
             loggingEnabled = _isEnabled;
         }
-
-        private static void CreateConnection()
-        {
-            Debug.Log("EventRepository: creating connection");
-            try
-            {
-                conn = new SqliteConnection(dbPath);
-            }
-            catch (Exception ex)
-            {
-                Debug.Log("EventRepository DB ERROR: " + ex.Message);
-            }
-        }
-
-        private void CreateSchema()
-        {
-            if (conn == null)
-            {
-                CreateConnection();
-            }
-
-            conn.Open();
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandType = CommandType.Text;
-                cmd.CommandText = "CREATE TABLE IF NOT EXISTS 'events' ( " +
-                                  "  'id' INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                                  "  'event' TEXT NOT NULL, " +
-                                  "  'updated' INTEGER NOT NULL" +
-                                  ");";
-                var result = cmd.ExecuteNonQuery();
-                if (loggingEnabled)
-                {
-                    Debug.Log("create schema: " + result);
-                }
-            }
-        }
-
         // generic method for dumping all events
         internal void Dump(RudderEvent rudderEvent)
         {
             try
             {
-                Debug.Log("EventRepository: EVENT DUMPED MESSAGE_ID" + rudderEvent.rl_message.rl_message_id);
+                Debug.Log("RudderSDK: EVENT DUMPED MESSAGE_ID" + rudderEvent.rl_message.rl_message_id);
 
                 JsonWriter writer = new JsonWriter();
                 writer.PrettyPrint = false;
                 JsonMapper.ToJson(rudderEvent, writer);
                 string eventString = writer.ToString();
 
-                Debug.Log("EventRepository: EVENT DUMPED" + eventString);
+                Debug.Log("RudderSDK: EVENT DUMPED" + eventString);
 
                 if (conn == null)
                 {
@@ -358,11 +363,10 @@ namespace com.rudderlabs.unity.library
             }
             catch (Exception e)
             {
-                Debug.Log("EventRepository: EVENT DUMPED" + e.Message);
+                Debug.Log("RudderSDK: EVENT DUMPED" + e.Message);
             }
 
         }
-
         public static bool Validator(object sender, X509Certificate certificate, X509Chain chain,
                                       SslPolicyErrors sslPolicyErrors)
         {

@@ -31,15 +31,16 @@ namespace Com.TorpedoLabs.Propeller.Analytics
             //in WynnAnalyticsDataConstants.cs
             rudder = RudderClient.getInstance(WynnAnalyticsDataConstants.RUDDER_WRITE_KEY);
             //rudder.enableLog(); //Logging is disabled by default
-            
+
             //There is no requirement for specifying Amplitude key since same 
             //is configured at Rudder server end
-            
+
             //Since Rudder SDK supports multiple destinations with different user_id
             //connotations, hence Rudder does not set user_id at instance level
             //It can be included in individual event calls to pass on to Amplitude
             //Same has been incorporated in code below
-        
+
+            GameEngine.LogError("RudderAnalyticsManager: Initialized");
         }
 
         /// <inheritdoc />
@@ -48,6 +49,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
         /// <inheritdoc />
         public void Init(IAnalyticsManager ownerManager)
         {
+            GameEngine.LogError("RudderAnalyticsManager: Init with ownerManager");
             this.ownerManager = ownerManager;
         }
 
@@ -80,13 +82,13 @@ namespace Com.TorpedoLabs.Propeller.Analytics
         public void RecordPurchase(string id, double price, double amountPurchased, string currency = null, string store = null)
         {
             try
-            {                
+            {
                 //Every event has an embedded properties structure
                 //First we will build the Properties structure
                 //Then we will build the encapsulating event structure
                 TrackPropertyBuilder propertyBuilder = new TrackPropertyBuilder();
                 propertyBuilder.SetCategory("revenue");
-                
+
                 RudderProperty recordPurchaseProperties = propertyBuilder.Build();
 
                 recordPurchaseProperties.AddProperty("productId", id);
@@ -102,7 +104,8 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 eventBuilder.SetEventName("revenue");
 
                 //Set user id if available
-                if (WynnEngine.PlayerId.HasValue()){
+                if (WynnEngine.PlayerId.HasValue())
+                {
                     eventBuilder.SetUserId(WynnEngine.PlayerId);
                 }
 
@@ -111,10 +114,12 @@ namespace Com.TorpedoLabs.Propeller.Analytics
 
                 //invoke track method
                 rudder.Track(eventBuilder);
+
+                GameEngine.LogError("RudderAnalyticsManager: Track: revenue");
             }
             catch (Exception e)
             {
-                GameEngine.LogError(e);
+                GameEngine.LogError("RudderAnalyticsManager: Track: Error: " + e.Message);
             }
         }
 
@@ -141,7 +146,8 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 eventBuilder.SetEventName(eventType);
 
                 //Set user id if available
-                if (WynnEngine.PlayerId.HasValue()){
+                if (WynnEngine.PlayerId.HasValue())
+                {
                     eventBuilder.SetUserId(WynnEngine.PlayerId);
                 }
 
@@ -150,10 +156,12 @@ namespace Com.TorpedoLabs.Propeller.Analytics
 
                 //invoke track method
                 rudder.Track(eventBuilder);
+
+                GameEngine.LogError("RudderAnalyticsManager: Track: " + eventType);
             }
             catch (Exception e)
             {
-                GameEngine.LogError(e);
+                GameEngine.LogError("RudderAnalyticsManager: Track: Error: " + e.Message);
             }
         }
     }
