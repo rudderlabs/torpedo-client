@@ -158,7 +158,6 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 eventBuilder.SetRudderProperty(customProperties);
 
                 //invoke track method
-                rudder.Track(eventBuilder);
 
                 // GameEngine.LogError("RudderAnalyticsManager: Track: " + eventType);
             }
