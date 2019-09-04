@@ -115,7 +115,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 //invoke track method
                 rudder.Track(eventBuilder);
 
-                GameEngine.LogError("RudderAnalyticsManager: Track: revenue");
+                // GameEngine.LogError("RudderAnalyticsManager: Track: revenue");
             }
             catch (Exception e)
             {
@@ -160,7 +160,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 //invoke track method
                 rudder.Track(eventBuilder);
 
-                GameEngine.LogError("RudderAnalyticsManager: Track: " + eventType);
+                // GameEngine.LogError("RudderAnalyticsManager: Track: " + eventType);
             }
             catch (Exception e)
             {
