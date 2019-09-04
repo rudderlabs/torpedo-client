@@ -78,11 +78,11 @@ namespace com.rudderlabs.unity.library
         }
         private static void CreateConnection()
         {
-            Debug.Log("RudderSDK: creating connection");
+            // Debug.Log("RudderSDK: creating connection");
             try
             {
                 conn = new SqliteConnection(dbPath);
-                Debug.Log("RudderSDK: CreateConnection SUCESS: ");
+                // Debug.Log("RudderSDK: CreateConnection SUCESS: ");
             }
             catch (Exception ex)
             {
@@ -110,7 +110,7 @@ namespace com.rudderlabs.unity.library
                     var result = cmd.ExecuteNonQuery();
                     if (loggingEnabled)
                     {
-                        Debug.Log("RudderSDK: CreateSchema: Success: " + result);
+                        // Debug.Log("RudderSDK: CreateSchema: Success: " + result);
                     }
                 }
             }
@@ -139,14 +139,14 @@ namespace com.rudderlabs.unity.library
                 messageIds.Clear();
                 messages.Clear();
                 FetchEventsFromDB(messageIds, messages, flushQueueSize);
-                Debug.Log("RudderSDK: In Loop: " + messages.Count);
+                // Debug.Log("RudderSDK: In Loop: " + messages.Count);
                 if (messages.Count >= flushQueueSize || (messages.Count > 0 && sleepCount >= waitTimeOut))
                 {
                     string payload = FormatJsonFromMessages(messages);
 
                     if (payload != null)
                     {
-                        Debug.Log("RudderSDK: PAYLOAD: " + payload);
+                        // Debug.Log("RudderSDK: PAYLOAD: " + payload);
 
                         string response = SendEventsToServer(payload);
 
@@ -190,7 +190,7 @@ namespace com.rudderlabs.unity.library
                     while (reader.Read())
                     {
                         dbCount = reader.GetInt32(0);
-                        Debug.Log("RudderSDK: GetDBRecordCount: " + dbCount.ToString());
+                        // Debug.Log("RudderSDK: GetDBRecordCount: " + dbCount.ToString());
                         break;
                     }
                 }
@@ -224,7 +224,7 @@ namespace com.rudderlabs.unity.library
                         string messageString = reader.GetString(1);
                         messages.Add(messageString);
 
-                        Debug.Log("RudderSDK: fetch: " + messageString);
+                        // Debug.Log("RudderSDK: fetch: " + messageString);
                     }
                 }
             }
@@ -243,7 +243,7 @@ namespace com.rudderlabs.unity.library
                 {
                     endPointUri = endPointUri + "/";
                 }
-                Debug.Log("RudderSDK: EndPointUri: in Func: " + endPointUri);
+                // Debug.Log("RudderSDK: EndPointUri: in Func: " + endPointUri);
                 var http = (HttpWebRequest)WebRequest.Create(new Uri(endPointUri + "hello"));
                 http.ContentType = "application/json";
                 http.Method = "POST";
@@ -277,7 +277,7 @@ namespace com.rudderlabs.unity.library
                     try
                     {
                         RudderEvent rlEvent = JsonMapper.ToObject<RudderEvent>(message);
-                        Debug.Log("RudderSDK: EVENT RETRIEVED" + rlEvent.rl_message.rl_message_id);
+                        // Debug.Log("RudderSDK: EVENT RETRIEVED" + rlEvent.rl_message.rl_message_id);
                         eventList.Add(rlEvent);
                     }
                     catch (Exception e)
@@ -315,7 +315,7 @@ namespace com.rudderlabs.unity.library
                             Value = messageId
                         });
 
-                        Debug.Log("RudderSDK: delete: " + messageId);
+                        // Debug.Log("RudderSDK: delete: " + messageId);
 
                         cmd.ExecuteNonQuery();
                     }
@@ -335,14 +335,14 @@ namespace com.rudderlabs.unity.library
         {
             try
             {
-                Debug.Log("RudderSDK: EVENT DUMPED MESSAGE_ID" + rudderEvent.rl_message.rl_message_id);
+                // Debug.Log("RudderSDK: EVENT DUMPED MESSAGE_ID" + rudderEvent.rl_message.rl_message_id);
 
                 JsonWriter writer = new JsonWriter();
                 writer.PrettyPrint = false;
                 JsonMapper.ToJson(rudderEvent, writer);
                 string eventString = writer.ToString();
 
-                Debug.Log("RudderSDK: EVENT DUMPED" + eventString);
+                // Debug.Log("RudderSDK: EVENT DUMPED" + eventString);
 
                 if (conn == null)
                 {
