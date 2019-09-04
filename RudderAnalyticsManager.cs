@@ -40,7 +40,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
             //It can be included in individual event calls to pass on to Amplitude
             //Same has been incorporated in code below
 
-            GameEngine.LogError("RudderAnalyticsManager: Initialized");
+            GameEngine.DebugMsg("RudderAnalyticsManager: Initialized");
         }
 
         /// <inheritdoc />
@@ -49,7 +49,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
         /// <inheritdoc />
         public void Init(IAnalyticsManager ownerManager)
         {
-            GameEngine.LogError("RudderAnalyticsManager: Init with ownerManager");
+            GameEngine.DebugMsg("RudderAnalyticsManager: Init with ownerManager");
             this.ownerManager = ownerManager;
         }
 
