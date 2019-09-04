@@ -153,6 +153,9 @@ namespace Com.TorpedoLabs.Propeller.Analytics
 
                 //Set the user properties
                 eventBuilder.SetUserProperty(new RudderUserProperty().AddProperties(GetCommonEventData()));
+                
+                //Set the event properties
+                eventBuilder.SetRudderProperty(customProperties);
 
                 //invoke track method
                 rudder.Track(eventBuilder);
