@@ -49,7 +49,7 @@ namespace com.rudderlabs.unity.library
             loggingEnabled = false;
 
             dbPath = "URI=file:" + Application.persistentDataPath + "/rl_persistance.db";
-            Debug.Log("RudderSDK: dbPath: " + dbPath);
+            // Debug.Log("RudderSDK: dbPath: " + dbPath);
             if (conn == null)
             {
                 CreateConnection();
@@ -73,8 +73,16 @@ namespace com.rudderlabs.unity.library
 #endif
             CreateSchema();
 
-            Thread t = new Thread(ProcessThread);
-            t.Start();
+            try
+            {
+                Thread t = new Thread(ProcessThread);
+                t.Start();
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("RudderSDK: ProcessThread ERROR: " + ex.Message);
+            }
+
         }
         private static void CreateConnection()
         {
@@ -82,6 +90,7 @@ namespace com.rudderlabs.unity.library
             try
             {
                 conn = new SqliteConnection(dbPath);
+                conn.Open();
                 // Debug.Log("RudderSDK: CreateConnection SUCESS: ");
             }
             catch (Exception ex)
@@ -98,7 +107,6 @@ namespace com.rudderlabs.unity.library
                     CreateConnection();
                 }
 
-                conn.Open();
                 using (var cmd = conn.CreateCommand())
                 {
                     cmd.CommandType = CommandType.Text;
@@ -178,7 +186,6 @@ namespace com.rudderlabs.unity.library
                 if (conn == null)
                 {
                     CreateConnection();
-                    conn.Open();
                 }
                 using (var cmd = conn.CreateCommand())
                 {
@@ -209,7 +216,6 @@ namespace com.rudderlabs.unity.library
                 if (conn == null)
                 {
                     CreateConnection();
-                    conn.Open();
                 }
                 using (var cmd = conn.CreateCommand())
                 {
@@ -274,16 +280,9 @@ namespace com.rudderlabs.unity.library
                 List<RudderEvent> eventList = new List<RudderEvent>();
                 foreach (string message in messages)
                 {
-                    try
-                    {
-                        RudderEvent rlEvent = JsonMapper.ToObject<RudderEvent>(message);
-                        // Debug.Log("RudderSDK: EVENT RETRIEVED" + rlEvent.rl_message.rl_message_id);
-                        eventList.Add(rlEvent);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.Log("RudderSDK: EVENT ERROR" + e.Message);
-                    }
+                    RudderEvent rlEvent = JsonMapper.ToObject<RudderEvent>(message);
+                    // Debug.Log("RudderSDK: EVENT RETRIEVED" + rlEvent.rl_message.rl_message_id);
+                    eventList.Add(rlEvent);
                 }
 
                 RudderEventPayload payload = new RudderEventPayload(writeKey, eventList);
@@ -302,6 +301,10 @@ namespace com.rudderlabs.unity.library
         {
             try
             {
+                if (conn == null)
+                {
+                    CreateConnection();
+                }
                 foreach (int messageId in messageIds)
                 {
                     using (var cmd = conn.CreateCommand())
@@ -363,7 +366,7 @@ namespace com.rudderlabs.unity.library
             }
             catch (Exception e)
             {
-                Debug.Log("RudderSDK: EVENT DUMPED" + e.Message);
+                Debug.Log("RudderSDK: Dump: Error" + e.Message);
             }
 
         }

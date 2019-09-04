@@ -60,7 +60,7 @@ namespace Com.TorpedoLabs.Wynn.Analytics
 #if !UNITY_EDITOR
             //Rudder SDK only works on device, crashes and has errors when running in editor.
             //Add Rudder Client to wrapper collection
-            GameEngine.LogError("WynnAnalyticsManager: Initialized RudderWrapper");
+            // GameEngine.LogError("WynnAnalyticsManager: Initialized RudderWrapper");
             wrappers.Add(SetupRudder());
 #endif
             spinResults = null;
@@ -193,7 +193,7 @@ namespace Com.TorpedoLabs.Wynn.Analytics
         {
             RudderAnalyticsManager manager = new RudderAnalyticsManager();
             manager.Init(this);
-            GameEngine.LogError("WynnAnalyticsManager: Initialized RudderAnalyticsManager");
+            // GameEngine.LogError("WynnAnalyticsManager: Initialized RudderAnalyticsManager");
             return manager;
         }
 
