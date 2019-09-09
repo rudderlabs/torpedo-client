@@ -1,5 +1,8 @@
 ﻿namespace com.rudderlabs.unity.library
 {
+    /* 
+        Default values for rudder client
+     */
     public static class Constants
     {
         public static string BASE_URL = "https://torpedo.rudderlabs.com";

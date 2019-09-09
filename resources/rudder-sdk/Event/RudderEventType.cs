@@ -6,9 +6,7 @@ namespace com.rudderlabs.unity.library.Event
         {
             value = _value;
         }
-
         public string value { get; private set; }
-
         public static RudderEventType TRACK { get { return new RudderEventType("track"); } }
         public static RudderEventType PAGE { get { return new RudderEventType("page"); } }
         public static RudderEventType SCREEN { get { return new RudderEventType("screen"); } }

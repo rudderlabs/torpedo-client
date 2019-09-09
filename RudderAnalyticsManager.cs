@@ -10,6 +10,10 @@ using System.Collections.Generic;
 using Com.TorpedoLabs.Propeller.Extensions;
 using Com.TorpedoLabs.Wynn;
 using Com.TorpedoLabs.Wynn.Backend;
+// RudderLabs dependencies
+using com.rudderlabs.unity.library;
+using com.rudderlabs.unity.library.Event;
+using com.rudderlabs.unity.library.Event.Property;
 
 namespace Com.TorpedoLabs.Propeller.Analytics
 {
@@ -112,8 +116,16 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 //Add the properties structure created to the event
                 eventBuilder.SetRudderProperty(recordPurchaseProperties);
 
-                //invoke track method
-                rudder.Track(eventBuilder);
+                // Create the event object
+                RudderEvent rudderEvent = eventBuilder.Build();
+
+                // Set the integrations
+                rudderEvent.AddIntegrations(RudderIntegrationPlatform.ALL, false);
+                rudderEvent.AddIntegrations(RudderIntegrationPlatform.GOOGLE_ANALYTICS, true);
+                rudderEvent.AddIntegrations(RudderIntegrationPlatform.AMPLITUDE, true);
+
+                //Invoke track method
+                rudder.Track(rudderEvent);
 
                 // GameEngine.LogError("RudderAnalyticsManager: Track: revenue");
             }
@@ -157,8 +169,16 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 //Set the event properties
                 eventBuilder.SetRudderProperty(customProperties);
 
-                //invoke track method
-                rudder.Track(eventBuilder);
+                // Create the event object
+                RudderEvent rudderEvent = eventBuilder.Build();
+
+                // Set the integrations
+                rudderEvent.AddIntegrations(RudderIntegrationPlatform.ALL, false);
+                rudderEvent.AddIntegrations(RudderIntegrationPlatform.GOOGLE_ANALYTICS, true);
+                rudderEvent.AddIntegrations(RudderIntegrationPlatform.AMPLITUDE, true);
+
+                //Invoke track method
+                rudder.Track(rudderEvent);
 
                 // GameEngine.LogError("RudderAnalyticsManager: Track: " + eventType);
             }

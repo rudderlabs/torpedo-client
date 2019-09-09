@@ -11,12 +11,12 @@ namespace com.rudderlabs.unity.library.Event.Property
             return map;
         }
 
-        public void AddProperty(string key, string value)
+        public void AddProperty(string key, object value)
         {
             map[key] = value;
         }
 
-        public void AddProperties(Dictionary<string, string> keyValues)
+        public void AddProperties(Dictionary<string, object> keyValues)
         {
             foreach (var key in keyValues.Keys)
             {

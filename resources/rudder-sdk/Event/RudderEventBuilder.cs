@@ -25,7 +25,7 @@ namespace com.rudderlabs.unity.library.Event
         }
 
         private string userId;
-        public RudderEventBuilder SetUseId(string userId)
+        public RudderEventBuilder SetUserId(string userId)
         {
             this.userId = userId;
             return this;

@@ -5,6 +5,11 @@
 const char * _GetiOSCarrierName()
 {
     CTTelephonyNetworkInfo *netinfo = [[CTTelephonyNetworkInfo alloc] init];
-    CTCarrier *carrier = [netinfo subscriberCellularProvider];
-    return [[carrier carrierName] UTF8String];
+    if (@available(iOS 12.0, *)) {
+        NSDictionary *info = netinfo.serviceSubscriberCellularProviders;
+        return [[info valueForKey:@"serviceSubscriberCellularProvider"] UTF8String];
+    } else {
+        CTCarrier *carrier = [netinfo subscriberCellularProvider];
+        return [[carrier carrierName] UTF8String];
+    }
 }

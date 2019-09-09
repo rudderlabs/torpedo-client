@@ -34,10 +34,12 @@ namespace com.rudderlabs.unity.library
         {
             return GetInstance(writeKey, endPointUri, flushQueueSize, Constants.WAIT_TIME_OUT);
         }
+        // instance initialization method
         public static RudderClient GetInstance(string writeKey, string endPointUri, int flushQueueSize, int waitTimeOut)
         {
             return GetInstance(writeKey, endPointUri, flushQueueSize, waitTimeOut, Constants.DB_COUNT_THRESHOLD);
         }
+        // instance initialization method
         public static RudderClient GetInstance(string writeKey, string endPointUri, int flushQueueSize, int waitTimeOut, int dbCountThreshold)
         {
             if (instance == null)
@@ -50,16 +52,6 @@ namespace com.rudderlabs.unity.library
 
             return instance;
         }
-
-        public void enableLog(bool _logging)
-        {
-            if (repository == null)
-            {
-                throw new RudderException("Client is not initialized");
-            }
-            repository.enableLogging(_logging);
-        }
-
         // getter & setter for endPointUri
         public string GetEndPointUri()
         {
@@ -69,7 +61,6 @@ namespace com.rudderlabs.unity.library
         {
             EventRepository.endPointUri = _endPointUri;
         }
-
         // getter & setter for flushQueueSize
         public int GetFlushQueueSize()
         {
@@ -79,7 +70,6 @@ namespace com.rudderlabs.unity.library
         {
             EventRepository.flushQueueSize = _flushQueueSize;
         }
-
         // end point for track events
         public void Track(RudderEvent rudderEvent)
         {
@@ -90,7 +80,6 @@ namespace com.rudderlabs.unity.library
         {
             this.Track(builder.Build());
         }
-
         // end point for page events
         public void Page(RudderEvent rudderEvent)
         {
@@ -101,7 +90,6 @@ namespace com.rudderlabs.unity.library
         {
             this.Page(builder.Build());
         }
-
         // end point for screen events
         public void Screen(RudderEvent rudderEvent)
         {
@@ -112,13 +100,12 @@ namespace com.rudderlabs.unity.library
         {
             this.Screen(builder.Build());
         }
-
         // end point for identify calls
         public void Identify(RudderTraits rudderTraits)
         {
             RudderEvent rudderEvent = new RudderEventBuilder()
                 .SetEventName("Identify")
-                .SetUseId(rudderTraits.rl_id)
+                .SetUserId(rudderTraits.rl_id)
                 .Build();
             rudderEvent.rl_message.rl_type = RudderEventType.IDENTIFY.value;
             rudderEvent.rl_message.rl_context.rl_traits = rudderTraits;
@@ -128,11 +115,5 @@ namespace com.rudderlabs.unity.library
         {
             Identify(builder.Build());
         }
-
-        // end point for flushing events
-        // public void Flush()
-        // {
-        //     repository.FlushEventsAsync();
-        // }
     }
 }

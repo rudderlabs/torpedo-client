@@ -5,42 +5,54 @@ using System;
 using System.Text;
 using System.Net;
 using System.IO;
-using Mono.Data.Sqlite;
-using System.Data;
 using System.Threading;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using LitJson;
+using Mono.Data.Sqlite;
+using System.Data;
+using System.Runtime.InteropServices;
 
 namespace com.rudderlabs.unity.library
 {
     internal class EventRepository
     {
+        // flag to declare whether the log will be enabled or not
         internal static bool loggingEnabled = true;
+        // limit of number of events in a single payload
         internal static int flushQueueSize;
+        // writeKey for the instance
         internal static string writeKey;
+        // time after which the events will be flushed to the server even if the 
+        // flushQueueSize is not reached
         internal static int waitTimeOut;
+        // threshold of number of events to be persisted in DB
         internal static int dbRecordCountThreshold;
-
+        // end point uri for the event backend
         internal static string endPointUri { get; set; }
-        // internal buffer for events which will be cleared upon successful transmission of events to server
-        private List<RudderEvent> eventBuffer = new List<RudderEvent>();
-
-        private static SqliteConnection conn;
-
+        // sqlite database connection object 
+        private static SqliteConnection dbConnection;
+        // sqlite database path
         private static string dbPath;
 
-        private int totalEvents = 0;
-
+        // carrier persistance variable
         internal static string carrier = "unavailable";
-
 #if (UNITY_IPHONE || UNITY_TVOS)
+        // ios plugin method for carrier information
         [DllImport("__Internal")]
         private static extern string _GetiOSCarrierName();
 #endif
-
+        // constructor to be called from RudderClient internally.
+        // tasks to be performed
+        // 1. set the values of writeKey, flushQueueSize, endPointUri, waitTimeOut, dbRecordCountThreshold
+        // 2. create database and open database connection
+        // 3. create database schema
+        // 4. register callback for turning off ssl verification
+        // 5. get carrierInformation from respective platform
+        // 6. start processor thread
         internal EventRepository(string _writeKey, int _flushQueueSize, string _endPointUri, int _waitTimeOut, int _dbRecordCountThreshold)
         {
+            // 1. set the values of writeKey, flushQueueSize, endPointUri, waitTimeOut, dbRecordCountThreshold
             writeKey = _writeKey;
             endPointUri = _endPointUri;
             flushQueueSize = _flushQueueSize;
@@ -48,18 +60,20 @@ namespace com.rudderlabs.unity.library
             dbRecordCountThreshold = _dbRecordCountThreshold;
             loggingEnabled = false;
 
+            // 2. create database and open database connection
             dbPath = "URI=file:" + Application.persistentDataPath + "/rl_persistance.db";
-            // Debug.Log("RudderSDK: dbPath: " + dbPath);
-            if (conn == null)
+            if (dbConnection == null)
             {
-                CreateConnection();
+                CreateDatabaseConnection();
             }
 
+            // 3. create database schema
+            CreateSchema();
+
+            // 4. register callback for turning off ssl verification
             ServicePointManager.ServerCertificateValidationCallback = Validator;
 
-            totalEvents = 0;
-
-            // make a cache of carrier information
+            // 5. get carrierInformation from respective platform
 #if UNITY_ANDROID
             AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
             AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
@@ -67,12 +81,11 @@ namespace com.rudderlabs.unity.library
             AndroidJavaObject context = activity.Call<AndroidJavaObject>("getApplicationContext");
             carrier = ajc.CallStatic<string>("getCarrier", context);
 #endif
-
 #if (UNITY_IPHONE || UNITY_TVOS)
             carrier = _GetiOSCarrierName();
 #endif
-            CreateSchema();
 
+            // 6. start processor thread
             try
             {
                 Thread t = new Thread(ProcessThread);
@@ -82,122 +95,117 @@ namespace com.rudderlabs.unity.library
             {
                 Debug.Log("RudderSDK: ProcessThread ERROR: " + ex.Message);
             }
-
         }
-        private static void CreateConnection()
+        // create database connection and open connection
+        private static void CreateDatabaseConnection()
         {
-            // Debug.Log("RudderSDK: creating connection");
             try
             {
-                conn = new SqliteConnection(dbPath);
-                conn.Open();
-                // Debug.Log("RudderSDK: CreateConnection SUCESS: ");
+                dbConnection = new SqliteConnection(dbPath);
+                dbConnection.Open();
             }
             catch (Exception ex)
             {
                 Debug.Log("RudderSDK: CreateConnection ERROR: " + ex.Message);
             }
         }
+        // create database schema
         private void CreateSchema()
         {
             try
             {
-                if (conn == null)
+                // check if db is accessible
+                if (dbConnection == null)
                 {
-                    CreateConnection();
+                    CreateDatabaseConnection();
                 }
 
-                using (var cmd = conn.CreateCommand())
+                using (var cmd = dbConnection.CreateCommand())
                 {
+                    // create table if not exists
                     cmd.CommandType = CommandType.Text;
                     cmd.CommandText = "CREATE TABLE IF NOT EXISTS 'events' ( " +
                                       "  'id' INTEGER PRIMARY KEY AUTOINCREMENT, " +
                                       "  'event' TEXT NOT NULL, " +
                                       "  'updated' INTEGER NOT NULL" +
                                       ");";
-                    var result = cmd.ExecuteNonQuery();
-                    if (loggingEnabled)
-                    {
-                        // Debug.Log("RudderSDK: CreateSchema: Success: " + result);
-                    }
+                    cmd.ExecuteNonQuery();
                 }
             }
             catch (Exception ex)
             {
                 Debug.Log("RudderSDK: CreateSchema ERROR: " + ex.Message);
             }
-
         }
-
+        // event processor
         private void ProcessThread(object obj)
         {
             int sleepCount = 0;
+            // infinte loop for processing the events. loop will revive in every one second
             while (true)
             {
                 List<int> messageIds = new List<int>();
                 List<string> messages = new List<string>();
-
+                // get the record count from database
                 int recordCount = GetDBRecordCount();
+                // check if persisted event count exceeds threshold
                 if (recordCount > dbRecordCountThreshold)
                 {
+                    // get the events to be deleted form the database 
                     FetchEventsFromDB(messageIds, messages, recordCount - dbRecordCountThreshold);
+                    // clear the events
                     ClearEventsFromDB(messageIds);
                 }
-
+                // clear the lists for fetching next set of events
                 messageIds.Clear();
                 messages.Clear();
+                // get events from persisted db
                 FetchEventsFromDB(messageIds, messages, flushQueueSize);
-                // Debug.Log("RudderSDK: In Loop: " + messages.Count);
+                // if flushQueueSize if reached or waitTimeOut is reached till last flush
                 if (messages.Count >= flushQueueSize || (messages.Count > 0 && sleepCount >= waitTimeOut))
                 {
-                    string payload = FormatJsonFromMessages(messages);
-
+                    // generate stirng payload form message list
+                    string payload = GetPayloadFromMessages(messages);
                     if (payload != null)
                     {
-                        // Debug.Log("RudderSDK: PAYLOAD: " + payload);
-
+                        // send events to server
                         string response = SendEventsToServer(payload);
-
                         if (response != null)
                         {
-                            Debug.Log("RudderSDK: response: " + response + " | " + messages.Count.ToString());
-
+                            // if server response is successful remove those events
                             if (response.Equals("OK"))
                             {
                                 ClearEventsFromDB(messageIds);
                             }
-
+                            // reset sleepCount to indicate a successful flush
                             sleepCount = 0;
                         }
                     }
                 }
-
+                // increment sleepCount to count the time from last successful flush 
                 sleepCount += 1;
-
                 Thread.Sleep(1000);
             }
         }
-
+        // get number of events saved in the database
         private int GetDBRecordCount()
         {
             int dbCount = -1;
             try
             {
-                if (conn == null)
+                // check for database connection
+                if (dbConnection == null)
                 {
-                    CreateConnection();
+                    CreateDatabaseConnection();
                 }
-                using (var cmd = conn.CreateCommand())
+                using (var cmd = dbConnection.CreateCommand())
                 {
                     cmd.CommandType = CommandType.Text;
                     cmd.CommandText = "SELECT count(*) FROM events;";
-
                     var reader = cmd.ExecuteReader();
-
                     while (reader.Read())
                     {
                         dbCount = reader.GetInt32(0);
-                        // Debug.Log("RudderSDK: GetDBRecordCount: " + dbCount.ToString());
                         break;
                     }
                 }
@@ -208,29 +216,25 @@ namespace com.rudderlabs.unity.library
             }
             return dbCount;
         }
-
+        // fetch last `eventCount` number of events from database 
         private void FetchEventsFromDB(List<int> messageIds, List<string> messages, int eventCount)
         {
             try
             {
-                if (conn == null)
+                // check for datbase connection
+                if (dbConnection == null)
                 {
-                    CreateConnection();
+                    CreateDatabaseConnection();
                 }
-                using (var cmd = conn.CreateCommand())
+                using (var cmd = dbConnection.CreateCommand())
                 {
                     cmd.CommandType = CommandType.Text;
                     cmd.CommandText = "SELECT * FROM events ORDER BY updated ASC LIMIT " + eventCount.ToString() + ";";
-
                     var reader = cmd.ExecuteReader();
-
                     while (reader.Read())
                     {
                         messageIds.Add(reader.GetInt32(0));
-                        string messageString = reader.GetString(1);
-                        messages.Add(messageString);
-
-                        // Debug.Log("RudderSDK: fetch: " + messageString);
+                        messages.Add(reader.GetString(1));
                     }
                 }
             }
@@ -239,32 +243,35 @@ namespace com.rudderlabs.unity.library
                 Debug.Log("RudderSDK: FetchEventsFromDB: Error: " + ex.Message);
             }
         }
-
-
+        // send event payload to server
         private string SendEventsToServer(string payload)
         {
             try
             {
+                // check if the endPointUri is formed correctly
                 if (!endPointUri.EndsWith("/", StringComparison.Ordinal))
                 {
                     endPointUri = endPointUri + "/";
                 }
-                // Debug.Log("RudderSDK: EndPointUri: in Func: " + endPointUri);
+                // create http request object
                 var http = (HttpWebRequest)WebRequest.Create(new Uri(endPointUri + "hello"));
+                // set content type to "application/json"
                 http.ContentType = "application/json";
+                // set request method to "POST"
                 http.Method = "POST";
-
+                // encode payload
                 ASCIIEncoding encoding = new ASCIIEncoding();
                 byte[] bytes = encoding.GetBytes(payload);
-
+                //write payload to network
                 Stream newStream = http.GetRequestStream();
                 newStream.Write(bytes, 0, bytes.Length);
+                //finally close the connection
                 newStream.Close();
-
+                // get the response
                 var response = http.GetResponse();
-
                 var stream = response.GetResponseStream();
                 var sr = new StreamReader(stream);
+                // return the response as a string
                 return sr.ReadToEnd();
             }
             catch (Exception ex)
@@ -273,55 +280,79 @@ namespace com.rudderlabs.unity.library
             }
             return null;
         }
-        private string FormatJsonFromMessages(List<string> messages)
+        // format payload json from list of individual event json strings
+        private string GetPayloadFromMessages(List<string> messages)
         {
             try
             {
-                List<RudderEvent> eventList = new List<RudderEvent>();
-                foreach (string message in messages)
+                /* 
+                    the json payload is created with string builder and string 
+                    manipulation to reduce the deserilization. LitJson library 
+                    is not working in iOS for desirialization
+                 */
+                // create the string builder for creating the payload json
+                StringBuilder stringBuilder = new StringBuilder();
+                // initial token for the json
+                stringBuilder.Append("{");
+                // add sent_at with a comma
+                stringBuilder.Append("\"sent_at\": \"" + DateTime.UtcNow.ToString("u") + "\",");
+                // add initial tokens for batch array
+                stringBuilder.Append("\"batch\": [");
+                // add all the message jsons
+                for (int index = 0; index < messages.Count; index++)
                 {
-                    RudderEvent rlEvent = JsonMapper.ToObject<RudderEvent>(message);
-                    // Debug.Log("RudderSDK: EVENT RETRIEVED" + rlEvent.rl_message.rl_message_id);
-                    eventList.Add(rlEvent);
+                    // add the message
+                    stringBuilder.Append(messages[index]);
+                    // if not the last one, add a comma
+                    if (index != messages.Count - 1)
+                    {
+                        stringBuilder.Append(",");
+                    }
                 }
+                // add the ending token for batch array
+                stringBuilder.Append("],");
+                // add write key without the comma as it is the last item in the json
+                stringBuilder.Append("\"writeKey\": \"" + writeKey + "\"");
+                // add ending token for the json
+                stringBuilder.Append("}");
 
-                RudderEventPayload payload = new RudderEventPayload(writeKey, eventList);
-                JsonWriter writer = new JsonWriter();
-                writer.PrettyPrint = false;
-                JsonMapper.ToJson(payload, writer);
-                return writer.ToString();
+                // finally return the formed json
+                return stringBuilder.ToString();
             }
             catch (Exception ex)
             {
-                Debug.Log("RudderSDK: FormatJsonFromMessages: Error: " + ex.Message);
+                Debug.Log("RudderSDK: GetPayloadFromMessages: Error: " + ex.Message);
             }
             return null;
         }
+        // remove events from database
         private void ClearEventsFromDB(List<int> messageIds)
         {
             try
             {
-                if (conn == null)
+                // check database connection
+                if (dbConnection == null)
                 {
-                    CreateConnection();
+                    CreateDatabaseConnection();
                 }
-                foreach (int messageId in messageIds)
+                using (var cmd = dbConnection.CreateCommand())
                 {
-                    using (var cmd = conn.CreateCommand())
+                    // format messageIds csv to be used in query
+                    StringBuilder builder = new StringBuilder();
+                    for (int index = 0; index < messageIds.Count; index++)
                     {
-                        cmd.CommandType = CommandType.Text;
-                        cmd.CommandText = "DELETE FROM events WHERE id = @MessageId";
-
-                        cmd.Parameters.Add(new SqliteParameter
+                        // add the messageId
+                        builder.Append(messageIds[index]);
+                        // add a comma if not the last item
+                        if (index != messageIds.Count - 1)
                         {
-                            ParameterName = "MessageId",
-                            Value = messageId
-                        });
-
-                        // Debug.Log("RudderSDK: delete: " + messageId);
-
-                        cmd.ExecuteNonQuery();
+                            builder.Append(",");
+                        }
                     }
+                    string messageIdsString = builder.ToString();
+                    cmd.CommandType = CommandType.Text;
+                    cmd.CommandText = "DELETE FROM events WHERE id IN (" + messageIdsString + ");";
+                    cmd.ExecuteNonQuery();
                 }
             }
             catch (Exception ex)
@@ -329,30 +360,26 @@ namespace com.rudderlabs.unity.library
                 Debug.Log("RudderSDK: ClearEventsFromDB: Error: " + ex.Message);
             }
         }
-        internal void enableLogging(bool _isEnabled)
-        {
-            loggingEnabled = _isEnabled;
-        }
         // generic method for dumping all events
         internal void Dump(RudderEvent rudderEvent)
         {
             try
             {
-                // Debug.Log("RudderSDK: EVENT DUMPED MESSAGE_ID" + rudderEvent.rl_message.rl_message_id);
-
+                // create event json from rudder event object
                 JsonWriter writer = new JsonWriter();
                 writer.PrettyPrint = false;
                 JsonMapper.ToJson(rudderEvent, writer);
                 string eventString = writer.ToString();
 
-                // Debug.Log("RudderSDK: EVENT DUMPED" + eventString);
-
-                if (conn == null)
+                // check database connection
+                if (dbConnection == null)
                 {
-                    CreateConnection();
+                    CreateDatabaseConnection();
                 }
-                using (var cmd = conn.CreateCommand())
+
+                using (var cmd = dbConnection.CreateCommand())
                 {
+                    // dump event json to database
                     cmd.CommandType = CommandType.Text;
                     cmd.CommandText = "INSERT INTO events (event, updated) VALUES (@Event, @Updated);";
                     cmd.Parameters.Add(new SqliteParameter
@@ -364,14 +391,13 @@ namespace com.rudderlabs.unity.library
                     cmd.ExecuteNonQuery();
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Debug.Log("RudderSDK: Dump: Error" + e.Message);
+                Debug.Log("RudderSDK: Dump: Error" + ex.Message);
             }
-
         }
-        public static bool Validator(object sender, X509Certificate certificate, X509Chain chain,
-                                      SslPolicyErrors sslPolicyErrors)
+        // ssl check validator
+        public static bool Validator(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             return true;
         }
