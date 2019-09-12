@@ -104,20 +104,20 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 }
 
                 //Now build the event structure
-                RudderElementBuilder eventBuilder = new RudderElementBuilder();
-                eventBuilder.WithEventName("revenue");
+                RudderElementBuilder elementBuilder = new RudderElementBuilder();
+                elementBuilder.WithEventName("revenue");
 
                 //Set user id if available
                 if (WynnEngine.PlayerId.HasValue())
                 {
-                    eventBuilder.WithUserId(WynnEngine.PlayerId);
+                    elementBuilder.WithUserId(WynnEngine.PlayerId);
                 }
 
                 //Add the properties structure created to the event
-                eventBuilder.WithEventProperties(recordPurchaseProperties);
+                elementBuilder.WithEventProperties(recordPurchaseProperties);
 
                 // Create the event object
-                RudderElement element = eventBuilder.Build();
+                RudderElement element = elementBuilder.Build();
 
                 // Set the integrations
                 element.integrations = new Dictionary<string, object>();
@@ -158,23 +158,23 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 }
 
                 //Now build the event structure
-                RudderElementBuilder eventBuilder = new RudderElementBuilder();
-                eventBuilder.WithEventName(eventType);
+                RudderElementBuilder elementBuilder = new RudderElementBuilder();
+                elementBuilder.WithEventName(eventType);
 
                 //Set user id if available
                 if (WynnEngine.PlayerId.HasValue())
                 {
-                    eventBuilder.WithUserId(WynnEngine.PlayerId);
+                    elementBuilder.WithUserId(WynnEngine.PlayerId);
                 }
 
                 //Set the user properties
-                eventBuilder.WithUserProperties(GetCommonEventData());
+                elementBuilder.WithUserProperties(GetCommonEventData());
 
                 //Set the event properties
-                eventBuilder.WithEventProperties(customProperties);
+                elementBuilder.WithEventProperties(customProperties);
 
                 // Create the event object
-                RudderElement element = eventBuilder.Build();
+                RudderElement element = elementBuilder.Build();
 
                 // Set the integrations
                 element.integrations = new Dictionary<string, object>();
