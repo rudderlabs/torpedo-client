@@ -10,10 +10,6 @@ using System.Collections.Generic;
 using Com.TorpedoLabs.Propeller.Extensions;
 using Com.TorpedoLabs.Wynn;
 using Com.TorpedoLabs.Wynn.Backend;
-// RudderLabs dependencies
-using com.rudderlabs.unity.library;
-using com.rudderlabs.unity.library.Event;
-using com.rudderlabs.unity.library.Event.Property;
 
 namespace Com.TorpedoLabs.Propeller.Analytics
 {
@@ -33,7 +29,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
             //development team. For Production, the Torpedo development team
             //can retrieve the writeKey from the management web interface and embed
             //in WynnAnalyticsDataConstants.cs
-            rudder = RudderClient.getInstance(WynnAnalyticsDataConstants.RUDDER_WRITE_KEY);
+            rudder = RudderClient.GetInstance(WynnAnalyticsDataConstants.RUDDER_WRITE_KEY);
             //rudder.enableLog(); //Logging is disabled by default
 
             //There is no requirement for specifying Amplitude key since same 
@@ -93,39 +89,44 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 TrackPropertyBuilder propertyBuilder = new TrackPropertyBuilder();
                 propertyBuilder.SetCategory("revenue");
 
-                RudderProperty recordPurchaseProperties = propertyBuilder.Build();
+                Dictionary<string, object> recordPurchaseProperties = propertyBuilder.Build();
 
-                recordPurchaseProperties.AddProperty("productId", id);
-                recordPurchaseProperties.AddProperty("price", price);
-                recordPurchaseProperties.AddProperty("quantity", 1);
-                recordPurchaseProperties.AddProperty("revenueType", store);
+                recordPurchaseProperties.Add("productId", id);
+                recordPurchaseProperties.Add("price", price);
+                recordPurchaseProperties.Add("quantity", 1);
+                recordPurchaseProperties.Add("revenueType", store);
 
                 //Add the FoolProofParams
-                recordPurchaseProperties.AddProperties(AnalyticsUtils.FoolProofParams(GetCommonEventData()));
+                Dictionary<string, object> eventData = AnalyticsUtils.FoolProofParams(GetCommonEventData());
+                foreach (var key in eventData.Keys)
+                {
+                    recordPurchaseProperties.Add(key, eventData[key]);
+                }
 
                 //Now build the event structure
-                RudderEventBuilder eventBuilder = new RudderEventBuilder();
-                eventBuilder.SetEventName("revenue");
+                RudderElementBuilder eventBuilder = new RudderElementBuilder();
+                eventBuilder.WithEventName("revenue");
 
                 //Set user id if available
                 if (WynnEngine.PlayerId.HasValue())
                 {
-                    eventBuilder.SetUserId(WynnEngine.PlayerId);
+                    eventBuilder.WithUserId(WynnEngine.PlayerId);
                 }
 
                 //Add the properties structure created to the event
-                eventBuilder.SetRudderProperty(recordPurchaseProperties);
+                eventBuilder.WithEventProperties(recordPurchaseProperties);
 
                 // Create the event object
-                RudderEvent rudderEvent = eventBuilder.Build();
+                RudderElement element = eventBuilder.Build();
 
                 // Set the integrations
-                rudderEvent.AddIntegrations(RudderIntegrationPlatform.ALL, false);
-                rudderEvent.AddIntegrations(RudderIntegrationPlatform.GOOGLE_ANALYTICS, true);
-                rudderEvent.AddIntegrations(RudderIntegrationPlatform.AMPLITUDE, true);
+                element.integrations = new Dictionary<string, object>();
+                element.integrations.Add("All", false);
+                element.integrations.Add("AM", true);
+                element.integrations.Add("GA", true);
 
                 //Invoke track method
-                rudder.Track(rudderEvent);
+                rudder.Track(element);
 
                 // GameEngine.LogError("RudderAnalyticsManager: Track: revenue");
             }
@@ -145,40 +146,44 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 //First we will build the Properties structure
                 //Then we will build the encapsulating event structure
                 TrackPropertyBuilder propertyBuilder = new TrackPropertyBuilder();
-
                 propertyBuilder.SetCategory(eventType);
 
                 //Now build the properties structure and add the 
                 //custom properties received
-                RudderProperty customProperties = propertyBuilder.Build();
-                customProperties.AddProperties(AnalyticsUtils.FoolProofParams(eventData));
+                Dictionary<string, object> customProperties = propertyBuilder.Build();
+                Dictionary<string, object> eventProps = AnalyticsUtils.FoolProofParams(eventData);
+                foreach (var key in eventProps.Keys)
+                {
+                    customProperties.Add(key, eventProps[key]);
+                }
 
                 //Now build the event structure
-                RudderEventBuilder eventBuilder = new RudderEventBuilder();
-                eventBuilder.SetEventName(eventType);
+                RudderElementBuilder eventBuilder = new RudderElementBuilder();
+                eventBuilder.WithEventName(eventType);
 
                 //Set user id if available
                 if (WynnEngine.PlayerId.HasValue())
                 {
-                    eventBuilder.SetUserId(WynnEngine.PlayerId);
+                    eventBuilder.WithUserId(WynnEngine.PlayerId);
                 }
 
                 //Set the user properties
-                eventBuilder.SetUserProperty(new RudderUserProperty().AddProperties(GetCommonEventData()));
-                
+                eventBuilder.WithUserProperties(GetCommonEventData());
+
                 //Set the event properties
-                eventBuilder.SetRudderProperty(customProperties);
+                eventBuilder.WithEventProperties(customProperties);
 
                 // Create the event object
-                RudderEvent rudderEvent = eventBuilder.Build();
+                RudderElement element = eventBuilder.Build();
 
                 // Set the integrations
-                rudderEvent.AddIntegrations(RudderIntegrationPlatform.ALL, false);
-                rudderEvent.AddIntegrations(RudderIntegrationPlatform.GOOGLE_ANALYTICS, true);
-                rudderEvent.AddIntegrations(RudderIntegrationPlatform.AMPLITUDE, true);
+                element.integrations = new Dictionary<string, object>();
+                element.integrations.Add("All", false);
+                element.integrations.Add("AM", true);
+                element.integrations.Add("GA", true);
 
                 //Invoke track method
-                rudder.Track(rudderEvent);
+                rudder.Track(element);
 
                 // GameEngine.LogError("RudderAnalyticsManager: Track: " + eventType);
             }
