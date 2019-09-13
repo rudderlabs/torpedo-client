@@ -121,9 +121,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
 
                 // Set the integrations
                 element.integrations = new Dictionary<string, object>();
-                element.integrations.Add("All", false);
-                element.integrations.Add("AM", true);
-                element.integrations.Add("GA", true);
+                element.integrations.Add("All", true);
 
                 //Invoke track method
                 rudder.Track(element);
@@ -178,9 +176,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
 
                 // Set the integrations
                 element.integrations = new Dictionary<string, object>();
-                element.integrations.Add("All", false);
-                element.integrations.Add("AM", true);
-                element.integrations.Add("GA", true);
+                element.integrations.Add("All", true);
 
                 //Invoke track method
                 rudder.Track(element);
