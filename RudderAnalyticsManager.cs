@@ -94,13 +94,20 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 recordPurchaseProperties.Add("productId", id);
                 recordPurchaseProperties.Add("price", price);
                 recordPurchaseProperties.Add("quantity", 1);
-                recordPurchaseProperties.Add("revenueType", store);
+                if (store != null)
+                {
+                    recordPurchaseProperties.Add("revenueType", store);
+                }
 
                 //Add the FoolProofParams
                 Dictionary<string, object> eventData = AnalyticsUtils.FoolProofParams(GetCommonEventData());
                 foreach (var key in eventData.Keys)
                 {
-                    recordPurchaseProperties.Add(key, eventData[key]);
+                    var value = eventData[key];
+                    if (value != null)
+                    {
+                        recordPurchaseProperties.Add(key, eventData[key]);
+                    }
                 }
 
                 //Now build the event structure
