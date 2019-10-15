@@ -106,7 +106,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                     var value = eventData[key];
                     if (value != null)
                     {
-                        recordPurchaseProperties.Add(key, eventData[key]);
+                        recordPurchaseProperties.Add(key, value);
                     }
                 }
 
