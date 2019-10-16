@@ -79,7 +79,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
         }
 
         /// <inheritdoc />
-        public void RecordPurchase(string id, double price, double amountPurchased, string currency = null, string store = null)
+        void RecordPurchase(string id, double price, double amountPurchased, string currency = null, string store = null, string transactionId = null)
         {
             try
             {
@@ -97,6 +97,10 @@ namespace Com.TorpedoLabs.Propeller.Analytics
                 if (store != null)
                 {
                     recordPurchaseProperties.Add("revenueType", store);
+                }
+                if (transactionId != null)
+                {
+                    recordPurchaseProperties.Add("transactionId", transactionId);
                 }
 
                 //Add the FoolProofParams
