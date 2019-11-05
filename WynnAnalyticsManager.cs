@@ -53,16 +53,17 @@ namespace Com.TorpedoLabs.Wynn.Analytics
                 return;
             }
 
-            Application.RequestAdvertisingIdentifierAsync(OnAdvertisingIdResult);
-            wrappers = new List<IAnalyticsLibraryWrapper>();
-            wrappers.Add(SetupFacebook());
-            wrappers.Add(SetupAmplitude());
+
 #if !UNITY_EDITOR
             //Rudder SDK only works on device, crashes and has errors when running in editor.
             //Add Rudder Client to wrapper collection
             // GameEngine.LogError("WynnAnalyticsManager: Initialized RudderWrapper");
             wrappers.Add(SetupRudder());
 #endif
+            Application.RequestAdvertisingIdentifierAsync(OnAdvertisingIdResult);
+            wrappers = new List<IAnalyticsLibraryWrapper>();
+            wrappers.Add(SetupFacebook());
+            wrappers.Add(SetupAmplitude());
             spinResults = null;
         }
 
