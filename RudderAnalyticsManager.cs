@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using Com.TorpedoLabs.Propeller.Extensions;
 using Com.TorpedoLabs.Wynn;
 using Com.TorpedoLabs.Wynn.Backend;
+using Rudderlabs;
 
 namespace Com.TorpedoLabs.Propeller.Analytics
 {
