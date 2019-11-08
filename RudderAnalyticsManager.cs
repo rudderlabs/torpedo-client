@@ -32,7 +32,7 @@ namespace Com.TorpedoLabs.Propeller.Analytics
             //development team. For Production, the Torpedo development team
             //can retrieve the writeKey from the management web interface and embed
             //in WynnAnalyticsDataConstants.cs
-            rudder = RudderClient.GetInstance(WynnAnalyticsDataConstants.RUDDER_WRITE_KEY);
+            rudder = RudderClient.GetInstance(WynnAnalyticsDataConstants.RUDDER_WRITE_KEY, WynnAnalyticsDataConstants.RUDDER_END_POINT_URL);
             //rudder.enableLog(); //Logging is disabled by default
 
             //There is no requirement for specifying Amplitude key since same 

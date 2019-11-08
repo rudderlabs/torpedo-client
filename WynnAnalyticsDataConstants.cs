@@ -129,5 +129,6 @@ namespace Com.TorpedoLabs.Wynn.Analytics
         // Adding default writeKey for RudderClient. 
         // Get the writeKey from the RudderDashboard by enabling the source "Unity"
         public const string RUDDER_WRITE_KEY = "1QH0xOiRBxiKht41YBe90rJVVXR";
+        public const string RUDDER_END_POINT_URL = "https://torpedo-prod.rudderlabs.com";
     }
 }
